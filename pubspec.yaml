@@ -1,6 +1,6 @@
 name: triage_bios_ai
 description: "Triage-BIOS.ai - Vital Intelligence for Critical Decisions"
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -24,7 +24,7 @@ dependencies:
   json_annotation: ^4.9.0
 
   # Health & Wearables
-  health: ^10.2.0
+  health: ^9.0.0
   permission_handler: ^11.3.1
 
   # Location & Maps
@@ -51,7 +51,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  
+
   # Code Generation
   build_runner: ^2.4.13
   retrofit_generator: ^8.2.1
@@ -59,7 +59,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/images/
     - assets/icons/

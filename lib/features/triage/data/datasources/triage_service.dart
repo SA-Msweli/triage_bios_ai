@@ -47,7 +47,7 @@ class TriageService {
     _ensureInitialized();
 
     try {
-      _logger.i('Starting triage assessment for symptoms: ${symptoms.length > 50 ? symptoms.substring(0, 50) + '...' : symptoms}');
+      _logger.i('Starting triage assessment for symptoms: ${symptoms.length > 50 ? '${symptoms.substring(0, 50)}...' : symptoms}');
 
       PatientVitals? vitals = providedVitals;
 

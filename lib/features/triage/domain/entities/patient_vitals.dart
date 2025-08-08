@@ -1,5 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'patient_vitals.g.dart';
+
+@JsonSerializable()
 class PatientVitals extends Equatable {
   final int? heartRate;
   final String? bloodPressure;
@@ -29,15 +33,15 @@ class PatientVitals extends Equatable {
         return true;
       }
     }
-    
+
     if (oxygenSaturation != null && oxygenSaturation! < 90) {
       return true;
     }
-    
+
     if (temperature != null && temperature! > 101.5) {
       return true;
     }
-    
+
     // Check blood pressure for hypertensive crisis
     if (bloodPressure != null) {
       final parts = bloodPressure!.split('/');
@@ -54,13 +58,13 @@ class PatientVitals extends Equatable {
         }
       }
     }
-    
+
     return false;
   }
 
   double get vitalsSeverityBoost {
     double boost = 0.0;
-    
+
     // Heart rate contribution
     if (heartRate != null) {
       if (heartRate! > 120) {
@@ -71,7 +75,7 @@ class PatientVitals extends Equatable {
         boost += 1.0;
       }
     }
-    
+
     // Oxygen saturation contribution
     if (oxygenSaturation != null) {
       if (oxygenSaturation! < 90) {
@@ -80,7 +84,7 @@ class PatientVitals extends Equatable {
         boost += 1.5;
       }
     }
-    
+
     // Temperature contribution
     if (temperature != null) {
       if (temperature! > 103) {
@@ -89,7 +93,7 @@ class PatientVitals extends Equatable {
         boost += 1.5;
       }
     }
-    
+
     // Blood pressure contribution
     if (bloodPressure != null) {
       final parts = bloodPressure!.split('/');
@@ -105,20 +109,25 @@ class PatientVitals extends Equatable {
         }
       }
     }
-    
+
     return boost.clamp(0.0, 3.0); // Cap at +3 points
   }
 
+  factory PatientVitals.fromJson(Map<String, dynamic> json) =>
+      _$PatientVitalsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PatientVitalsToJson(this);
+
   @override
   List<Object?> get props => [
-        heartRate,
-        bloodPressure,
-        temperature,
-        oxygenSaturation,
-        respiratoryRate,
-        heartRateVariability,
-        timestamp,
-        deviceSource,
-        dataQuality,
-      ];
+    heartRate,
+    bloodPressure,
+    temperature,
+    oxygenSaturation,
+    respiratoryRate,
+    heartRateVariability,
+    timestamp,
+    deviceSource,
+    dataQuality,
+  ];
 }

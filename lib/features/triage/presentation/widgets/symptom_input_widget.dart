@@ -39,10 +39,7 @@ class _SymptomInputWidgetState extends State<SymptomInputWidget> {
     final vitals = currentState is VitalsLoaded ? currentState.vitals : null;
 
     context.read<TriageBloc>().add(
-      AssessSymptomsEvent(
-        symptoms: symptoms,
-        vitals: vitals,
-      ),
+      AssessSymptomsEvent(symptoms: symptoms, vitals: vitals),
     );
   }
 
@@ -51,7 +48,7 @@ class _SymptomInputWidgetState extends State<SymptomInputWidget> {
     return BlocBuilder<TriageBloc, TriageState>(
       builder: (context, state) {
         final isLoading = state is TriageLoading;
-        
+
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -80,16 +77,20 @@ class _SymptomInputWidgetState extends State<SymptomInputWidget> {
                   enabled: !isLoading,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Please describe your symptoms in detail...\n\nFor example:\n• "I have severe chest pain that started 30 minutes ago"\n• "Difficulty breathing and dizziness since this morning"',
+                    hintText:
+                        'Please describe your symptoms in detail...\n\nFor example:\n• "I have severe chest pain that started 30 minutes ago"\n• "Difficulty breathing and dizziness since this morning"',
                     border: const OutlineInputBorder(),
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                   ),
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submitSymptoms(),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Quick symptom buttons
                 Wrap(
                   spacing: 8,
@@ -127,22 +128,24 @@ class _SymptomInputWidgetState extends State<SymptomInputWidget> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Submit button
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: isLoading ? null : _submitSymptoms,
-                    icon: isLoading 
+                    icon: isLoading
                         ? const SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.psychology),
-                    label: Text(isLoading ? 'Analyzing...' : 'Get AI Assessment'),
+                    label: Text(
+                      isLoading ? 'Analyzing...' : 'Get AI Assessment',
+                    ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -185,9 +188,9 @@ class _QuickSymptomChip extends StatelessWidget {
       onPressed: enabled ? onTap : null,
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
       labelStyle: TextStyle(
-        color: enabled 
+        color: enabled
             ? Theme.of(context).colorScheme.onSecondaryContainer
-            : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
       ),
     );
   }

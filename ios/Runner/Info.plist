@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- HealthKit Permissions -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>Triage-BIOS.ai needs access to your health data to provide accurate emergency triage assessments. Your vital signs help our AI determine the urgency of your medical condition.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Triage-BIOS.ai may update your health data with assessment results for your medical records.</string>
+	
+	<!-- Location Permission for Hospital Routing -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Triage-BIOS.ai needs your location to find nearby hospitals and provide optimal routing recommendations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Triage-BIOS.ai needs your location to find nearby hospitals and provide optimal routing recommendations.</string>
 </dict>
 </plist>

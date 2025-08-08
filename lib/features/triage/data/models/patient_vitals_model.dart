@@ -20,6 +20,7 @@ class PatientVitalsModel extends PatientVitals {
   factory PatientVitalsModel.fromJson(Map<String, dynamic> json) =>
       _$PatientVitalsModelFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$PatientVitalsModelToJson(this);
 
   factory PatientVitalsModel.fromEntity(PatientVitals vitals) {

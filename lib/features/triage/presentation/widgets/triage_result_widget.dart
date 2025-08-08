@@ -4,10 +4,7 @@ import '../../domain/entities/triage_result.dart';
 class TriageResultWidget extends StatelessWidget {
   final TriageResult result;
 
-  const TriageResultWidget({
-    super.key,
-    required this.result,
-  });
+  const TriageResultWidget({super.key, required this.result});
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +29,8 @@ class TriageResultWidget extends StatelessWidget {
                     children: [
                       Text(
                         'Triage Assessment Complete',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Severity Score: ${result.severityScore.toStringAsFixed(1)}/10',
@@ -47,7 +43,10 @@ class TriageResultWidget extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getSeverityColor(context),
                     borderRadius: BorderRadius.circular(16),
@@ -62,9 +61,9 @@ class TriageResultWidget extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Confidence interval
             Row(
               children: [
@@ -82,14 +81,16 @@ class TriageResultWidget extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // AI Explanation
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -119,15 +120,19 @@ class TriageResultWidget extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Vitals contribution (if available)
-            if (result.vitals != null && result.vitalsContribution != null && result.vitalsContribution! > 0) ...[
+            if (result.vitals != null &&
+                result.vitalsContribution != null &&
+                result.vitalsContribution! > 0) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -143,9 +148,8 @@ class TriageResultWidget extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Wearable Data Impact (+${result.vitalsContribution!.toStringAsFixed(1)} points)',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -159,7 +163,7 @@ class TriageResultWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Key symptoms
             if (result.keySymptoms.isNotEmpty) ...[
               _buildSection(
@@ -170,7 +174,7 @@ class TriageResultWidget extends StatelessWidget {
               ),
               const SizedBox(height: 12),
             ],
-            
+
             // Concerning findings
             if (result.concerningFindings.isNotEmpty) ...[
               _buildSection(
@@ -182,7 +186,7 @@ class TriageResultWidget extends StatelessWidget {
               ),
               const SizedBox(height: 12),
             ],
-            
+
             // Recommended actions
             _buildSection(
               context,
@@ -190,9 +194,9 @@ class TriageResultWidget extends StatelessWidget {
               Icons.checklist,
               result.recommendedActions,
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Action buttons
             if (result.isCritical) ...[
               SizedBox(
@@ -202,7 +206,9 @@ class TriageResultWidget extends StatelessWidget {
                     // TODO: Implement emergency call
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Emergency services integration coming soon'),
+                        content: Text(
+                          'Emergency services integration coming soon',
+                        ),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -218,17 +224,12 @@ class TriageResultWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            
+
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  // TODO: Implement hospital routing
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Hospital routing coming soon'),
-                    ),
-                  );
+                  Navigator.of(context).pushNamed('/hospitals');
                 },
                 icon: const Icon(Icons.local_hospital),
                 label: const Text('Find Nearby Hospitals'),
@@ -237,9 +238,9 @@ class TriageResultWidget extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Footer info
             Row(
               children: [
@@ -281,7 +282,7 @@ class TriageResultWidget extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isWarning 
+              color: isWarning
                   ? Theme.of(context).colorScheme.error
                   : Theme.of(context).colorScheme.primary,
             ),
@@ -296,28 +297,34 @@ class TriageResultWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        ...items.map((item) => Padding(
-          padding: const EdgeInsets.only(left: 20, bottom: 2),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '• ',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isWarning ? Theme.of(context).colorScheme.error : null,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  item,
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(left: 20, bottom: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '• ',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isWarning ? Theme.of(context).colorScheme.error : null,
+                    color: isWarning
+                        ? Theme.of(context).colorScheme.error
+                        : null,
                   ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    item,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isWarning
+                          ? Theme.of(context).colorScheme.error
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        )),
+        ),
       ],
     );
   }

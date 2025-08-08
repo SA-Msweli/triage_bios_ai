@@ -117,7 +117,7 @@ coverage_helper_test.dart
 .env.staging
 .env.production
 .env.test
-
+.env.*
 # API Keys and Secrets
 **/secrets/
 **/keys/

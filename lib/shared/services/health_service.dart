@@ -8,7 +8,7 @@ class HealthService {
   HealthService._internal();
 
   final Logger _logger = Logger();
-  Health? _health;
+  HealthFactory? _health; // Changed from Health? to HealthFactory?
 
   // Health data types we want to access
   static final List<HealthDataType> _dataTypes = [
@@ -22,7 +22,7 @@ class HealthService {
 
   Future<bool> initialize() async {
     try {
-      _health = Health();
+      _health = HealthFactory(); // Changed from Health() to HealthFactory()
       
       // Request permissions
       final permissions = _dataTypes.map((type) => 
@@ -57,9 +57,9 @@ class HealthService {
 
       // Get health data from the last 24 hours
       final healthData = await _health!.getHealthDataFromTypes(
-        types: _dataTypes,
-        startTime: yesterday,
-        endTime: now,
+        yesterday, // startTime
+        now,       // endTime
+        _dataTypes // types
       );
 
       if (healthData.isEmpty) {

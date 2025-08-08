@@ -8,19 +8,27 @@ import 'features/triage/data/repositories/triage_repository_impl.dart';
 import 'features/triage/domain/usecases/assess_symptoms_usecase.dart';
 import 'features/triage/presentation/bloc/triage_bloc.dart';
 import 'features/triage/presentation/pages/triage_page.dart';
+import 'features/hospital_routing/presentation/widgets/hospital_map_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize services
   await HealthService().initialize();
-  
-  // Initialize Watson X.ai service (with mock API key for demo)
+
+  // Initialize Watson X.ai service with real IBM Cloud credentials
+  // TODO: Replace with your actual IBM Cloud API key and project ID
   WatsonxService().initialize(
-    apiKey: 'demo_api_key_for_hackathon',
-    projectId: 'triage-bios-ai-demo',
+    apiKey: const String.fromEnvironment(
+      'WATSONX_API_KEY',
+      defaultValue: 'your_ibm_cloud_api_key_here',
+    ),
+    projectId: const String.fromEnvironment(
+      'WATSONX_PROJECT_ID',
+      defaultValue: 'your_watsonx_project_id_here',
+    ),
   );
-  
+
   runApp(const TriageBiosApp());
 }
 
@@ -68,14 +76,8 @@ class TriageBiosApp extends StatelessWidget {
 
 final GoRouter _router = GoRouter(
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomePage(),
-    ),
-    GoRoute(
-      path: '/triage',
-      builder: (context, state) => const TriagePage(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
+    GoRoute(path: '/triage', builder: (context, state) => const TriagePage()),
     GoRoute(
       path: '/hospitals',
       builder: (context, state) => const HospitalsPage(),
@@ -95,9 +97,9 @@ class HomePage extends StatelessWidget {
           children: [
             Text(
               AppConstants.appName,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
               AppConstants.appTagline,
@@ -128,9 +130,8 @@ class HomePage extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'Emergency Triage Assessment',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -169,9 +170,8 @@ class HomePage extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'Find Nearby Hospitals',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -211,8 +211,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-
-
 class HospitalsPage extends StatelessWidget {
   const HospitalsPage({super.key});
 
@@ -222,18 +220,19 @@ class HospitalsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Nearby Hospitals'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // Refresh hospital data
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Refreshing hospital data...')),
+              );
+            },
+          ),
+        ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.construction, size: 64),
-            SizedBox(height: 16),
-            Text('Hospital Map Coming Soon'),
-            Text('This will show real-time hospital capacity and routing'),
-          ],
-        ),
-      ),
+      body: const HospitalMapWidget(),
     );
   }
 }

@@ -215,6 +215,7 @@ classDiagram
     PatientVitals ||--o{ TriageResult
     Patient ||--o{ TriageResult
     TriageResult }o--|| Hospital
+    }
 ```
 
 ## AI Processing Pipeline

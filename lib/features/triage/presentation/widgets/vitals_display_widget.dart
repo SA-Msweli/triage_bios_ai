@@ -42,18 +42,24 @@ class VitalsDisplayWidget extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.refresh),
                         onPressed: () {
-                          context.read<TriageBloc>().add(const LoadVitalsEvent());
+                          context.read<TriageBloc>().add(
+                            const LoadVitalsEvent(),
+                          );
                         },
                         tooltip: 'Refresh Vitals',
                       ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 if (state is VitalsLoaded)
                   _buildVitalsData(context, state.vitals)
                 else if (state is VitalsError)
-                  _buildVitalsError(context, state.message, state.hasPermissions)
+                  _buildVitalsError(
+                    context,
+                    state.message,
+                    state.hasPermissions,
+                  )
                 else if (state is VitalsLoading)
                   _buildVitalsLoading(context)
                 else if (state is HealthPermissionsState)
@@ -104,7 +110,7 @@ class VitalsDisplayWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        
+
         // Vitals grid
         GridView.count(
           crossAxisCount: 2,
@@ -144,7 +150,7 @@ class VitalsDisplayWidget extends StatelessWidget {
               ),
           ],
         ),
-        
+
         if (vitals.hasCriticalVitals) ...[
           const SizedBox(height: 12),
           Container(
@@ -173,7 +179,7 @@ class VitalsDisplayWidget extends StatelessWidget {
             ),
           ),
         ],
-        
+
         const SizedBox(height: 8),
         Text(
           'Last updated: ${_formatTimestamp(vitals.timestamp)}',
@@ -185,7 +191,11 @@ class VitalsDisplayWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildVitalsError(BuildContext context, String message, bool hasPermissions) {
+  Widget _buildVitalsError(
+    BuildContext context,
+    String message,
+    bool hasPermissions,
+  ) {
     return Column(
       children: [
         Icon(
@@ -195,7 +205,9 @@ class VitalsDisplayWidget extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          hasPermissions ? 'No Vitals Data Available' : 'Health Access Required',
+          hasPermissions
+              ? 'No Vitals Data Available'
+              : 'Health Access Required',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: Theme.of(context).colorScheme.error,
           ),
@@ -210,7 +222,9 @@ class VitalsDisplayWidget extends StatelessWidget {
         if (!hasPermissions)
           FilledButton.icon(
             onPressed: () {
-              context.read<TriageBloc>().add(const RequestHealthPermissionsEvent());
+              context.read<TriageBloc>().add(
+                const RequestHealthPermissionsEvent(),
+              );
             },
             icon: const Icon(Icons.security),
             label: const Text('Grant Health Access'),
@@ -237,7 +251,10 @@ class VitalsDisplayWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPermissionsState(BuildContext context, HealthPermissionsState state) {
+  Widget _buildPermissionsState(
+    BuildContext context,
+    HealthPermissionsState state,
+  ) {
     if (state.isRequesting) {
       return const Column(
         children: [
@@ -252,14 +269,14 @@ class VitalsDisplayWidget extends StatelessWidget {
       children: [
         Icon(
           state.hasPermissions ? Icons.check_circle : Icons.security,
-          color: state.hasPermissions 
+          color: state.hasPermissions
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.error,
           size: 32,
         ),
         const SizedBox(height: 8),
         Text(
-          state.hasPermissions 
+          state.hasPermissions
               ? 'Health Access Granted'
               : 'Health Access Required',
           style: Theme.of(context).textTheme.titleSmall,
@@ -276,7 +293,9 @@ class VitalsDisplayWidget extends StatelessWidget {
         else
           FilledButton.icon(
             onPressed: () {
-              context.read<TriageBloc>().add(const RequestHealthPermissionsEvent());
+              context.read<TriageBloc>().add(
+                const RequestHealthPermissionsEvent(),
+              );
             },
             icon: const Icon(Icons.security),
             label: const Text('Grant Health Access'),
@@ -325,19 +344,19 @@ class VitalsDisplayWidget extends StatelessWidget {
   bool _isBloodPressureAbnormal(String bp) {
     final parts = bp.split('/');
     if (parts.length != 2) return false;
-    
+
     final systolic = int.tryParse(parts[0]);
     final diastolic = int.tryParse(parts[1]);
-    
+
     if (systolic == null || diastolic == null) return false;
-    
+
     return systolic > 140 || diastolic > 90 || systolic < 90 || diastolic < 60;
   }
 
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
@@ -368,11 +387,15 @@ class _VitalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isAbnormal 
-            ? Theme.of(context).colorScheme.errorContainer.withOpacity(0.3)
-            : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: isAbnormal
+            ? Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.3)
+            : Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: isAbnormal 
+        border: isAbnormal
             ? Border.all(color: Theme.of(context).colorScheme.error, width: 1)
             : null,
       ),
@@ -382,16 +405,16 @@ class _VitalCard extends StatelessWidget {
           Icon(
             icon,
             size: 16,
-            color: isAbnormal 
+            color: isAbnormal
                 ? Theme.of(context).colorScheme.error
                 : Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 10,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 10),
             textAlign: TextAlign.center,
           ),
           Text(

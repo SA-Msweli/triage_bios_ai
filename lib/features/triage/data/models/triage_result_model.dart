@@ -1,7 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/triage_result.dart';
 import '../../domain/entities/patient_vitals.dart';
-import 'patient_vitals_model.dart';
 
 part 'triage_result_model.g.dart';
 
