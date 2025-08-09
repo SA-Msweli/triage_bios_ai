@@ -5,6 +5,8 @@ import '../../core/constants/watsonx_constants.dart';
 import '../../core/errors/failures.dart';
 import '../../features/triage/domain/entities/patient_vitals.dart';
 import '../../features/triage/domain/entities/triage_result.dart';
+import 'medical_algorithm_service.dart';
+import 'vitals_trend_service.dart';
 
 class WatsonxService {
   static final WatsonxService _instance = WatsonxService._internal();
@@ -15,6 +17,10 @@ class WatsonxService {
   late final Dio _dio;
   String? _accessToken;
   DateTime? _tokenExpiry;
+  
+  // Enhanced services
+  final MedicalAlgorithmService _medicalAlgorithmService = MedicalAlgorithmService();
+  final VitalsTrendService _trendService = VitalsTrendService();
 
   void initialize({required String apiKey, String? projectId}) {
     _dio = Dio(
@@ -121,57 +127,73 @@ class WatsonxService {
     Map<String, dynamic>? demographics,
   }) async {
     try {
-      await _ensureAuthenticated();
-
-      final prompt = _buildTriagePrompt(
-        symptoms: symptoms,
-        vitals: vitals,
-        demographics: demographics,
-      );
-
-      _logger.i('Sending triage request to Watson X.ai');
-
-      // Real Watson X.ai API call
-      final response = await _dio.post(
-        WatsonxConstants.generateEndpoint,
-        queryParameters: {'version': WatsonxConstants.watsonxApiVersion},
-        data: {
-          'model_id': WatsonxConstants.graniteModelId,
-          'project_id': _projectId,
-          'input': '${WatsonxConstants.systemPrompt}\n\n$prompt',
-          'parameters': {
-            'max_new_tokens': WatsonxConstants.maxTokens,
-            'temperature': WatsonxConstants.temperature,
-            'top_p': WatsonxConstants.topP,
-            'stop_sequences': ['\n\n'],
-          },
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final aiResponse = _parseWatsonxResponse(response.data, vitals);
-        return _parseTriageResponse(aiResponse, vitals);
-      } else {
-        throw TriageFailure(
-          'Watson X.ai API call failed: ${response.statusCode}',
-        );
+      // Store vitals for trend analysis
+      if (vitals != null) {
+        await _trendService.storeVitalsReading(vitals);
       }
-    } catch (e) {
-      _logger.e('Triage assessment failed: $e');
 
-      // Fallback to mock response for demo if real API fails
-      if (e is DioException &&
-          (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
-        _logger.w('Authentication failed, falling back to demo mode');
-        final fallbackPrompt = _buildTriagePrompt(
+      // Get trend analysis
+      final trendAnalysis = await _trendService.analyzeTrends();
+
+      Map<String, dynamic>? aiResponse;
+      
+      // Try Watson X.ai first if credentials available
+      try {
+        await _ensureAuthenticated();
+
+        final prompt = _buildTriagePrompt(
           symptoms: symptoms,
           vitals: vitals,
           demographics: demographics,
         );
-        final mockResponse = await _mockWatsonxResponse(fallbackPrompt, vitals);
-        return _parseTriageResponse(mockResponse, vitals);
+
+        _logger.i('Sending triage request to Watson X.ai');
+
+        // Real Watson X.ai API call
+        final response = await _dio.post(
+          WatsonxConstants.generateEndpoint,
+          queryParameters: {'version': WatsonxConstants.watsonxApiVersion},
+          data: {
+            'model_id': WatsonxConstants.graniteModelId,
+            'project_id': _projectId,
+            'input': '${WatsonxConstants.systemPrompt}\n\n$prompt',
+            'parameters': {
+              'max_new_tokens': WatsonxConstants.maxTokens,
+              'temperature': WatsonxConstants.temperature,
+              'top_p': WatsonxConstants.topP,
+              'stop_sequences': ['\n\n'],
+            },
+          },
+        );
+
+        if (response.statusCode == 200) {
+          aiResponse = _parseWatsonxResponse(response.data, vitals);
+        }
+      } catch (e) {
+        _logger.w('Watson X.ai unavailable, using medical algorithms: $e');
+        // Will fall back to medical algorithms below
       }
 
+      // Use medical algorithm service (either as primary or to enhance AI)
+      final medicalAssessment = await _medicalAlgorithmService.analyzePatient(
+        symptoms: symptoms,
+        vitals: vitals,
+        demographics: demographics,
+        aiResult: aiResponse,
+      );
+
+      // Combine AI and medical algorithm results
+      final combinedResponse = _combineAiAndMedicalResults(
+        aiResponse: aiResponse,
+        medicalAssessment: medicalAssessment,
+        trendAnalysis: trendAnalysis,
+        vitals: vitals,
+      );
+
+      return _parseTriageResponse(combinedResponse, vitals, medicalAssessment, trendAnalysis);
+
+    } catch (e) {
+      _logger.e('Triage assessment failed: $e');
       if (e is TriageFailure) rethrow;
       throw TriageFailure('Failed to assess symptoms: $e');
     }
@@ -501,10 +523,135 @@ class WatsonxService {
     return findings;
   }
 
+  /// Combine AI results with medical algorithm results
+  Map<String, dynamic> _combineAiAndMedicalResults({
+    Map<String, dynamic>? aiResponse,
+    required MedicalAssessmentResult medicalAssessment,
+    required VitalsTrendAnalysis trendAnalysis,
+    PatientVitals? vitals,
+  }) {
+    // Use medical algorithm as primary if no AI response
+    if (aiResponse == null) {
+      return {
+        'severity_score': medicalAssessment.finalScore,
+        'confidence_lower': (medicalAssessment.finalScore - (1.0 - medicalAssessment.confidence)).clamp(0.0, 10.0),
+        'confidence_upper': (medicalAssessment.finalScore + (1.0 - medicalAssessment.confidence)).clamp(0.0, 10.0),
+        'explanation': medicalAssessment.clinicalReasoning,
+        'key_symptoms': _extractKeySymptoms(medicalAssessment),
+        'concerning_findings': medicalAssessment.riskFactors,
+        'recommended_actions': medicalAssessment.recommendations,
+        'urgency_level': _getUrgencyLevel(medicalAssessment.finalScore),
+        'time_to_treatment': _getTimeToTreatment(_getUrgencyLevel(medicalAssessment.finalScore)),
+        'medical_assessment': medicalAssessment,
+        'trend_analysis': trendAnalysis,
+        'assessment_method': 'medical_algorithms',
+      };
+    }
+
+    // Combine AI with medical validation
+    final aiScore = (aiResponse['severity_score'] as num).toDouble();
+    final medicalScore = medicalAssessment.finalScore;
+    
+    // Use medical algorithm to validate and potentially adjust AI score
+    double finalScore = aiScore;
+    String assessmentMethod = 'ai_with_medical_validation';
+    
+    // If medical assessment significantly differs, blend the scores
+    if ((aiScore - medicalScore).abs() > 2.0) {
+      finalScore = (aiScore * 0.7 + medicalScore * 0.3); // AI gets 70% weight, medical 30%
+      assessmentMethod = 'ai_medical_hybrid';
+      _logger.i('AI and medical scores differ significantly (AI: $aiScore, Medical: $medicalScore), using hybrid: $finalScore');
+    }
+
+    // Enhance explanation with medical reasoning
+    String enhancedExplanation = aiResponse['explanation'] as String;
+    if (medicalAssessment.clinicalReasoning.isNotEmpty) {
+      enhancedExplanation += '\n\nClinical Analysis: ${medicalAssessment.clinicalReasoning}';
+    }
+
+    // Add trend analysis if significant
+    if (trendAnalysis.deteriorationRisk != DeteriorationRisk.minimal) {
+      enhancedExplanation += '\n\nTrend Analysis: ${trendAnalysis.recommendations.first}';
+    }
+
+    // Combine risk factors
+    final aiConcerns = List<String>.from(aiResponse['concerning_findings'] as List);
+    final medicalConcerns = medicalAssessment.riskFactors;
+    final combinedConcerns = {...aiConcerns, ...medicalConcerns}.toList();
+
+    // Combine recommendations
+    final aiRecommendations = List<String>.from(aiResponse['recommended_actions'] as List);
+    final medicalRecommendations = medicalAssessment.recommendations;
+    final combinedRecommendations = _mergeRecommendations(aiRecommendations, medicalRecommendations);
+
+    return {
+      'severity_score': finalScore,
+      'confidence_lower': (finalScore - 0.5).clamp(0.0, 10.0),
+      'confidence_upper': (finalScore + 0.5).clamp(0.0, 10.0),
+      'explanation': enhancedExplanation,
+      'key_symptoms': aiResponse['key_symptoms'],
+      'concerning_findings': combinedConcerns,
+      'recommended_actions': combinedRecommendations,
+      'urgency_level': _getUrgencyLevel(finalScore),
+      'time_to_treatment': _getTimeToTreatment(_getUrgencyLevel(finalScore)),
+      'medical_assessment': medicalAssessment,
+      'trend_analysis': trendAnalysis,
+      'assessment_method': assessmentMethod,
+    };
+  }
+
+  List<String> _extractKeySymptoms(MedicalAssessmentResult assessment) {
+    // Extract key symptoms from medical assessment
+    final symptoms = <String>[];
+    
+    if (assessment.esiLevel <= 2) {
+      symptoms.add('High-acuity presentation');
+    }
+    
+    if (assessment.mewsScore >= 3) {
+      symptoms.add('Abnormal vital signs');
+    }
+    
+    if (assessment.symptomSeverity >= 6) {
+      symptoms.add('Significant symptom burden');
+    }
+
+    return symptoms.isEmpty ? ['General symptoms'] : symptoms;
+  }
+
+  List<String> _mergeRecommendations(List<String> aiRecs, List<String> medicalRecs) {
+    final merged = <String>[];
+    
+    // Prioritize medical recommendations for safety
+    for (final medRec in medicalRecs) {
+      if (!merged.any((rec) => rec.toLowerCase().contains(medRec.toLowerCase().split(' ').first))) {
+        merged.add(medRec);
+      }
+    }
+    
+    // Add AI recommendations that don't conflict
+    for (final aiRec in aiRecs) {
+      if (!merged.any((rec) => rec.toLowerCase().contains(aiRec.toLowerCase().split(' ').first))) {
+        merged.add(aiRec);
+      }
+    }
+    
+    return merged.take(5).toList(); // Limit to 5 recommendations
+  }
+
+  String _getUrgencyLevel(double score) {
+    if (score >= 8.0) return 'critical';
+    if (score >= 6.0) return 'urgent';
+    if (score >= 4.0) return 'standard';
+    return 'non_urgent';
+  }
+
   TriageResult _parseTriageResponse(
     Map<String, dynamic> response,
-    PatientVitals? vitals,
-  ) {
+    PatientVitals? vitals, [
+    MedicalAssessmentResult? medicalAssessment,
+    VitalsTrendAnalysis? trendAnalysis,
+  ]) {
     try {
       return TriageResult.fromScore(
         assessmentId: 'triage_${DateTime.now().millisecondsSinceEpoch}',
@@ -520,7 +667,7 @@ class WatsonxService {
           response['recommended_actions'] as List,
         ),
         vitals: vitals,
-        aiModelVersion: WatsonxConstants.triageModelVersion,
+        aiModelVersion: response['assessment_method'] ?? WatsonxConstants.triageModelVersion,
       );
     } catch (e) {
       _logger.e('Failed to parse triage response: $e');

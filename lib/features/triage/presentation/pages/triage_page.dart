@@ -6,6 +6,7 @@ import '../bloc/triage_state.dart';
 import '../widgets/symptom_input_widget.dart';
 import '../widgets/vitals_display_widget.dart';
 import '../widgets/triage_result_widget.dart';
+import '../widgets/trend_analysis_widget.dart';
 
 class TriagePage extends StatelessWidget {
   const TriagePage({super.key});
@@ -69,6 +70,11 @@ class TriagePage extends StatelessWidget {
                 
                 // Vitals Section
                 const VitalsDisplayWidget(),
+                
+                const SizedBox(height: 16),
+                
+                // Trend Analysis Section
+                const TrendAnalysisWidget(),
                 
                 const SizedBox(height: 16),
                 
