@@ -1,7 +1,6 @@
 // Integration test for consent management
 // This test verifies that the consent service works correctly
 
-import 'dart:convert';
 
 void main() {
   print('=== Consent Management Integration Test ===');

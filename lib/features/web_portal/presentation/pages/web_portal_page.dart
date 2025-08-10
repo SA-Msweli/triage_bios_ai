@@ -35,9 +35,7 @@ class _WebPortalPageState extends State<WebPortalPage> {
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -52,7 +50,9 @@ class _WebPortalPageState extends State<WebPortalPage> {
               });
             },
             labelType: NavigationRailLabelType.all,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
             destinations: _getNavigationDestinations(user.role),
             leading: Column(
               children: [
@@ -72,9 +72,9 @@ class _WebPortalPageState extends State<WebPortalPage> {
                 const SizedBox(height: 8),
                 Text(
                   user.name,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 Text(
@@ -127,7 +127,9 @@ class _WebPortalPageState extends State<WebPortalPage> {
                     color: Theme.of(context).colorScheme.surface,
                     border: Border(
                       bottom: BorderSide(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
                   ),
@@ -147,25 +149,36 @@ class _WebPortalPageState extends State<WebPortalPage> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'Web Portal',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ),
                       const Spacer(),
                       if (user.isGuest)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -174,13 +187,17 @@ class _WebPortalPageState extends State<WebPortalPage> {
                               Icon(
                                 Icons.visibility,
                                 size: 16,
-                                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSecondaryContainer,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Guest Mode',
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -200,9 +217,7 @@ class _WebPortalPageState extends State<WebPortalPage> {
                 ),
 
                 // Content area
-                Expanded(
-                  child: _buildContent(user.role),
-                ),
+                Expanded(child: _buildContent(user.role)),
               ],
             ),
           ),
@@ -255,7 +270,7 @@ class _WebPortalPageState extends State<WebPortalPage> {
             label: Text('Hospitals'),
           ),
         ];
-      case UserRole.healthcare_provider:
+      case UserRole.healthcareProvider:
         return const [
           NavigationRailDestination(
             icon: Icon(Icons.dashboard),
@@ -302,7 +317,7 @@ class _WebPortalPageState extends State<WebPortalPage> {
         return _buildPatientContent();
       case UserRole.caregiver:
         return _buildCaregiverContent();
-      case UserRole.healthcare_provider:
+      case UserRole.healthcareProvider:
         return _buildProviderContent();
       case UserRole.admin:
         return _buildAdminContent();
@@ -544,7 +559,7 @@ class _WebPortalPageState extends State<WebPortalPage> {
 
   void _showProfileDialog() {
     final user = _authService.currentUser!;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -558,7 +573,9 @@ class _WebPortalPageState extends State<WebPortalPage> {
             Text('Role: ${user.displayRole}'),
             if (user.phoneNumber != null) Text('Phone: ${user.phoneNumber}'),
             if (user.age != null) Text('Age: ${user.age}'),
-            Text('Member since: ${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}'),
+            Text(
+              'Member since: ${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}',
+            ),
           ],
         ),
         actions: [

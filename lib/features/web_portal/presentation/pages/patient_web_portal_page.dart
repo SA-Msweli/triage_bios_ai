@@ -22,7 +22,7 @@ class PatientWebPortalPage extends StatefulWidget {
 
 class _PatientWebPortalPageState extends State<PatientWebPortalPage> {
   final HospitalRoutingService _routingService = HospitalRoutingService();
-  final ConsentService _consentService = ConsentService();
+  final ConsentService _consentService = ConsentService(); // TODO: Implement consent functionality
   
   String _currentStep = 'symptoms'; // symptoms, vitals, routing, consent
   Map<String, dynamic> _triageData = {};

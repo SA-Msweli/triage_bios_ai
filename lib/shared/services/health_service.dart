@@ -8,7 +8,7 @@ class HealthService {
   HealthService._internal();
 
   final Logger _logger = Logger();
-  HealthFactory? _health; // Changed from Health? to HealthFactory?
+  Health? _health;
 
   // Health data types we want to access
   static final List<HealthDataType> _dataTypes = [
@@ -22,12 +22,13 @@ class HealthService {
 
   Future<bool> initialize() async {
     try {
-      _health = HealthFactory(); // Changed from Health() to HealthFactory()
-      
+      _health = Health();
+
       // Request permissions
-      final permissions = _dataTypes.map((type) => 
-          HealthDataAccess.READ).toList();
-      
+      final permissions = _dataTypes
+          .map((type) => HealthDataAccess.READ)
+          .toList();
+
       final authorized = await _health!.requestAuthorization(
         _dataTypes,
         permissions: permissions,
@@ -57,9 +58,9 @@ class HealthService {
 
       // Get health data from the last 24 hours
       final healthData = await _health!.getHealthDataFromTypes(
-        yesterday, // startTime
-        now,       // endTime
-        _dataTypes // types
+        types: _dataTypes,
+        startTime: yesterday,
+        endTime: now,
       );
 
       if (healthData.isEmpty) {
@@ -84,20 +85,24 @@ class HealthService {
         switch (data.type) {
           case HealthDataType.HEART_RATE:
             if (heartRate == null) {
-              heartRate = (data.value as NumericHealthValue).numericValue.toInt();
+              heartRate = (data.value as NumericHealthValue).numericValue
+                  .toInt();
               latestTimestamp ??= data.dateTo;
               deviceSource = data.sourceName;
             }
             break;
           case HealthDataType.BLOOD_PRESSURE_SYSTOLIC:
             // We need both systolic and diastolic
-            final systolic = (data.value as NumericHealthValue).numericValue.toInt();
+            final systolic = (data.value as NumericHealthValue).numericValue
+                .toInt();
             final diastolicData = healthData
                 .where((d) => d.type == HealthDataType.BLOOD_PRESSURE_DIASTOLIC)
                 .where((d) => d.dateTo.isAtSameMomentAs(data.dateTo))
                 .firstOrNull;
             if (diastolicData != null && bloodPressure == null) {
-              final diastolic = (diastolicData.value as NumericHealthValue).numericValue.toInt();
+              final diastolic = (diastolicData.value as NumericHealthValue)
+                  .numericValue
+                  .toInt();
               bloodPressure = '$systolic/$diastolic';
               latestTimestamp ??= data.dateTo;
             }
@@ -105,9 +110,11 @@ class HealthService {
           case HealthDataType.BODY_TEMPERATURE:
             if (temperature == null) {
               // Convert Celsius to Fahrenheit if needed
-              double temp = (data.value as NumericHealthValue).numericValue.toDouble();
-              if (temp < 50) { // Assume Celsius if less than 50
-                temp = (temp * 9/5) + 32;
+              double temp = (data.value as NumericHealthValue).numericValue
+                  .toDouble();
+              if (temp < 50) {
+                // Assume Celsius if less than 50
+                temp = (temp * 9 / 5) + 32;
               }
               temperature = temp;
               latestTimestamp ??= data.dateTo;
@@ -115,13 +122,15 @@ class HealthService {
             break;
           case HealthDataType.BLOOD_OXYGEN:
             if (oxygenSaturation == null) {
-              oxygenSaturation = (data.value as NumericHealthValue).numericValue.toDouble();
+              oxygenSaturation = (data.value as NumericHealthValue).numericValue
+                  .toDouble();
               latestTimestamp ??= data.dateTo;
             }
             break;
           case HealthDataType.RESPIRATORY_RATE:
             if (respiratoryRate == null) {
-              respiratoryRate = (data.value as NumericHealthValue).numericValue.toInt();
+              respiratoryRate = (data.value as NumericHealthValue).numericValue
+                  .toInt();
               latestTimestamp ??= data.dateTo;
             }
             break;
@@ -164,9 +173,10 @@ class HealthService {
         dataQuality: dataQuality,
       );
 
-      _logger.i('Retrieved vitals: HR=$heartRate, BP=$bloodPressure, Temp=$temperature, SpO2=$oxygenSaturation');
+      _logger.i(
+        'Retrieved vitals: HR=$heartRate, BP=$bloodPressure, Temp=$temperature, SpO2=$oxygenSaturation',
+      );
       return vitals;
-
     } catch (e) {
       _logger.e('Failed to get health data: $e');
       return null;
@@ -176,7 +186,7 @@ class HealthService {
   Future<bool> hasHealthPermissions() async {
     try {
       if (_health == null) return false;
-      
+
       // Check if we have permission for at least heart rate
       final hasPermission = await _health!.hasPermissions(_dataTypes);
       return hasPermission ?? false;

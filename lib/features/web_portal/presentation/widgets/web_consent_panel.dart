@@ -492,7 +492,7 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('• Proceed to ${widget.hospitalName}', style: TextStyle(fontSize: 12)),
+                  Text('• Proceed to ${widget.hospitalName}', style: const TextStyle(fontSize: 12)),
                   const Text('• Present this triage summary at reception', style: TextStyle(fontSize: 12)),
                   const Text('• Your priority level has been communicated', style: TextStyle(fontSize: 12)),
                 ],

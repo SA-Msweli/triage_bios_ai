@@ -2,31 +2,38 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
+import '../interfaces/speech_interface.dart';
+import '../factories/speech_factory.dart';
 
 /// Service for handling multi-modal input (voice, images, text)
 class MultiModalInputService {
-  static final MultiModalInputService _instance = MultiModalInputService._internal();
+  static final MultiModalInputService _instance =
+      MultiModalInputService._internal();
   factory MultiModalInputService() => _instance;
   MultiModalInputService._internal();
 
   final Logger _logger = Logger();
-  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  SpeechInterface? _speechService;
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   bool _speechEnabled = false;
   bool _isListening = false;
 
   /// Initialize the service
   Future<bool> initialize() async {
     try {
-      _speechEnabled = await _speechToText.initialize(
+      // Use factory to create appropriate speech service
+      _speechService = await SpeechFactory.createWithFallback();
+      
+      _speechEnabled = await _speechService!.initialize(
         onError: (error) => _logger.e('Speech recognition error: $error'),
         onStatus: (status) => _logger.d('Speech recognition status: $status'),
       );
-      
-      _logger.i('MultiModal input service initialized. Speech enabled: $_speechEnabled');
+
+      _logger.i(
+        'MultiModal input service initialized. Speech enabled: $_speechEnabled',
+      );
       return true;
     } catch (e) {
       _logger.e('Failed to initialize MultiModal input service: $e');
@@ -56,17 +63,16 @@ class MultiModalInputService {
     try {
       String recognizedText = '';
       bool completed = false;
-      String? error;
 
       _isListening = true;
-      
-      await _speechToText.listen(
+
+      await _speechService!.listen(
         onResult: (result) {
           recognizedText = result.recognizedWords;
           if (onPartialResult != null) {
             onPartialResult(recognizedText);
           }
-          
+
           if (result.finalResult) {
             completed = true;
             _isListening = false;
@@ -80,12 +86,12 @@ class MultiModalInputService {
           // Could be used for UI feedback
         },
         cancelOnError: true,
-        listenMode: stt.ListenMode.confirmation,
       );
 
       // Wait for completion or timeout
       int attempts = 0;
-      while (!completed && _isListening && attempts < 300) { // 30 seconds max
+      while (!completed && _isListening && attempts < 300) {
+        // 30 seconds max
         await Future.delayed(const Duration(milliseconds: 100));
         attempts++;
       }
@@ -98,15 +104,14 @@ class MultiModalInputService {
 
       // Process and enhance the recognized text
       final processedText = _processVoiceInput(recognizedText);
-      
+
       _logger.i('Voice input completed: "$processedText"');
-      
+
       return VoiceInputResult.success(
         originalText: recognizedText,
         processedText: processedText,
-        confidence: _speechToText.lastRecognizedWords.confidence,
+        confidence: 0.9, // Default confidence since we can't access it directly
       );
-
     } catch (e) {
       _isListening = false;
       _logger.e('Voice input failed: $e');
@@ -117,7 +122,7 @@ class MultiModalInputService {
   /// Stop voice input
   Future<void> stopVoiceInput() async {
     if (_isListening) {
-      await _speechToText.stop();
+      await _speechService!.stop();
       _isListening = false;
       _logger.i('Voice input stopped');
     }
@@ -185,18 +190,19 @@ class MultiModalInputService {
 
       final File imageFile = File(image.path);
       final Uint8List imageBytes = await imageFile.readAsBytes();
-      
+
       // Basic image analysis (size, format validation)
       final analysis = await _analyzeImage(imageFile, imageBytes);
-      
-      _logger.i('Image captured: ${image.path}, Size: ${imageBytes.length} bytes');
-      
+
+      _logger.i(
+        'Image captured: ${image.path}, Size: ${imageBytes.length} bytes',
+      );
+
       return ImageInputResult.success(
         imagePath: image.path,
         imageBytes: imageBytes,
         analysis: analysis,
       );
-
     } catch (e) {
       _logger.e('Image capture failed: $e');
       return ImageInputResult.error('Failed to capture image: $e');
@@ -225,23 +231,20 @@ class MultiModalInputService {
           : images;
 
       final List<ImageData> imageDataList = [];
-      
+
       for (final image in limitedImages) {
         final File imageFile = File(image.path);
         final Uint8List imageBytes = await imageFile.readAsBytes();
         final analysis = await _analyzeImage(imageFile, imageBytes);
-        
-        imageDataList.add(ImageData(
-          path: image.path,
-          bytes: imageBytes,
-          analysis: analysis,
-        ));
+
+        imageDataList.add(
+          ImageData(path: image.path, bytes: imageBytes, analysis: analysis),
+        );
       }
 
       _logger.i('Selected ${imageDataList.length} images');
-      
-      return MultiImageInputResult.success(imageDataList);
 
+      return MultiImageInputResult.success(imageDataList);
     } catch (e) {
       _logger.e('Multiple image selection failed: $e');
       return MultiImageInputResult.error('Failed to select images: $e');
@@ -249,22 +252,34 @@ class MultiModalInputService {
   }
 
   /// Basic image analysis (without AI - just metadata and validation)
-  Future<ImageAnalysis> _analyzeImage(File imageFile, Uint8List imageBytes) async {
+  Future<ImageAnalysis> _analyzeImage(
+    File imageFile,
+    Uint8List imageBytes,
+  ) async {
     try {
       final String fileName = imageFile.path.split('/').last;
       final String fileExtension = fileName.split('.').last.toLowerCase();
       final int fileSize = imageBytes.length;
-      
+
       // Validate image format
-      final bool isValidFormat = ['jpg', 'jpeg', 'png', 'gif', 'bmp'].contains(fileExtension);
-      
+      final bool isValidFormat = [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'bmp',
+      ].contains(fileExtension);
+
       // Basic quality assessment based on file size
       String qualityAssessment;
-      if (fileSize > 2000000) { // > 2MB
+      if (fileSize > 2000000) {
+        // > 2MB
         qualityAssessment = 'High quality';
-      } else if (fileSize > 500000) { // > 500KB
+      } else if (fileSize > 500000) {
+        // > 500KB
         qualityAssessment = 'Good quality';
-      } else if (fileSize > 100000) { // > 100KB
+      } else if (fileSize > 100000) {
+        // > 100KB
         qualityAssessment = 'Moderate quality';
       } else {
         qualityAssessment = 'Low quality';
@@ -272,24 +287,30 @@ class MultiModalInputService {
 
       // Generate basic recommendations
       final List<String> recommendations = [];
-      
+
       if (!isValidFormat) {
-        recommendations.add('Image format not optimal for medical documentation');
+        recommendations.add(
+          'Image format not optimal for medical documentation',
+        );
       }
-      
+
       if (fileSize < 100000) {
-        recommendations.add('Image quality may be too low for detailed analysis');
+        recommendations.add(
+          'Image quality may be too low for detailed analysis',
+        );
       }
-      
+
       if (fileSize > 5000000) {
         recommendations.add('Image file is very large - consider compressing');
       }
 
       // Medical image type suggestions (basic heuristics)
       String suggestedType = 'General symptom documentation';
-      if (fileName.toLowerCase().contains('skin') || fileName.toLowerCase().contains('rash')) {
+      if (fileName.toLowerCase().contains('skin') ||
+          fileName.toLowerCase().contains('rash')) {
         suggestedType = 'Skin condition documentation';
-      } else if (fileName.toLowerCase().contains('wound') || fileName.toLowerCase().contains('cut')) {
+      } else if (fileName.toLowerCase().contains('wound') ||
+          fileName.toLowerCase().contains('cut')) {
         suggestedType = 'Wound documentation';
       }
 
@@ -303,7 +324,6 @@ class MultiModalInputService {
         recommendations: recommendations,
         timestamp: DateTime.now(),
       );
-
     } catch (e) {
       _logger.e('Image analysis failed: $e');
       return ImageAnalysis.error(e.toString());
@@ -311,11 +331,11 @@ class MultiModalInputService {
   }
 
   /// Get available locales for speech recognition
-  Future<List<stt.LocaleName>> getAvailableLocales() async {
-    if (!_speechEnabled) return [];
-    
+  Future<List<String>> getAvailableLocales() async {
+    if (!_speechEnabled || _speechService == null) return [];
+
     try {
-      return await _speechToText.locales();
+      return await _speechService!.locales();
     } catch (e) {
       _logger.e('Failed to get available locales: $e');
       return [];
@@ -324,8 +344,10 @@ class MultiModalInputService {
 
   /// Check microphone permission
   Future<bool> checkMicrophonePermission() async {
+    if (_speechService == null) return false;
+    
     try {
-      return await _speechToText.hasPermission;
+      return await _speechService!.hasPermission;
     } catch (e) {
       _logger.e('Failed to check microphone permission: $e');
       return false;
@@ -334,8 +356,10 @@ class MultiModalInputService {
 
   /// Request microphone permission
   Future<bool> requestMicrophonePermission() async {
+    if (_speechService == null) return false;
+    
     try {
-      return await _speechToText.initialize();
+      return await _speechService!.initialize();
     } catch (e) {
       _logger.e('Failed to request microphone permission: $e');
       return false;
@@ -374,10 +398,7 @@ class VoiceInputResult {
   }
 
   factory VoiceInputResult.error(String error) {
-    return VoiceInputResult._(
-      success: false,
-      error: error,
-    );
+    return VoiceInputResult._(success: false, error: error);
   }
 }
 
@@ -413,18 +434,11 @@ class ImageInputResult {
   }
 
   factory ImageInputResult.cancelled() {
-    return ImageInputResult._(
-      success: false,
-      cancelled: true,
-    );
+    return ImageInputResult._(success: false, cancelled: true);
   }
 
   factory ImageInputResult.error(String error) {
-    return ImageInputResult._(
-      success: false,
-      cancelled: false,
-      error: error,
-    );
+    return ImageInputResult._(success: false, cancelled: false, error: error);
   }
 }
 
@@ -450,10 +464,7 @@ class MultiImageInputResult {
   }
 
   factory MultiImageInputResult.cancelled() {
-    return MultiImageInputResult._(
-      success: false,
-      cancelled: true,
-    );
+    return MultiImageInputResult._(success: false, cancelled: true);
   }
 
   factory MultiImageInputResult.error(String error) {
@@ -470,11 +481,7 @@ class ImageData {
   final Uint8List bytes;
   final ImageAnalysis analysis;
 
-  ImageData({
-    required this.path,
-    required this.bytes,
-    required this.analysis,
-  });
+  ImageData({required this.path, required this.bytes, required this.analysis});
 }
 
 class ImageAnalysis {

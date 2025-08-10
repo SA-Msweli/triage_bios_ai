@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
@@ -14,7 +13,6 @@ class FhirService {
 
   // Test FHIR endpoints (using public test servers)
   static const String _testFhirBaseUrl = 'https://hapi.fhir.org/baseR4';
-  static const String _backupFhirUrl = 'https://r4.smarthealthit.org';
 
   void initialize() {
     _dio = Dio(BaseOptions(

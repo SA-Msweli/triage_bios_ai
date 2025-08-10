@@ -191,6 +191,7 @@ class ProviderDashboardWidget extends StatelessWidget {
                             const SizedBox(height: 16),
                             
                             _buildActivityItem(
+                              context,
                               'New patient arrived',
                               'Sarah Johnson - Critical',
                               '5 min ago',
@@ -198,6 +199,7 @@ class ProviderDashboardWidget extends StatelessWidget {
                               Colors.red,
                             ),
                             _buildActivityItem(
+                              context,
                               'Patient discharged',
                               'John Doe - Recovered',
                               '12 min ago',
@@ -205,6 +207,7 @@ class ProviderDashboardWidget extends StatelessWidget {
                               Colors.green,
                             ),
                             _buildActivityItem(
+                              context,
                               'Bed available',
                               'Room 204 - ICU',
                               '18 min ago',
@@ -367,6 +370,7 @@ class ProviderDashboardWidget extends StatelessWidget {
   }
 
   Widget _buildActivityItem(
+    BuildContext context,
     String title,
     String subtitle,
     String time,

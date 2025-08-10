@@ -281,7 +281,7 @@ class AuthService {
       {
         'name': 'Dr. Sarah Wilson',
         'email': 'doctor@demo.com',
-        'role': UserRole.healthcare_provider,
+        'role': UserRole.healthcareProvider,
         'phoneNumber': '+1-555-0301',
       },
       {
@@ -406,7 +406,7 @@ class User {
         return 'Patient';
       case UserRole.caregiver:
         return 'Family/Caregiver';
-      case UserRole.healthcare_provider:
+      case UserRole.healthcareProvider:
         return 'Healthcare Provider';
       case UserRole.admin:
         return 'Administrator';
@@ -429,7 +429,7 @@ class User {
 enum UserRole {
   patient,
   caregiver,
-  healthcare_provider,
+  healthcareProvider,
   admin,
 }
 

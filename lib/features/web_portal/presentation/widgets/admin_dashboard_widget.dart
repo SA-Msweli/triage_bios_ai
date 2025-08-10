@@ -127,6 +127,7 @@ class AdminDashboardWidget extends StatelessWidget {
                         const SizedBox(height: 16),
                         
                         _buildActivityItem(
+                          context,
                           'New user registered',
                           'Dr. Sarah Wilson - Healthcare Provider',
                           '5 min ago',
@@ -134,6 +135,7 @@ class AdminDashboardWidget extends StatelessWidget {
                           Colors.blue,
                         ),
                         _buildActivityItem(
+                          context,
                           'System backup completed',
                           'Daily backup successful',
                           '2 hours ago',
@@ -141,6 +143,7 @@ class AdminDashboardWidget extends StatelessWidget {
                           Colors.green,
                         ),
                         _buildActivityItem(
+                          context,
                           'High traffic detected',
                           'Peak usage: 1,200 concurrent users',
                           '4 hours ago',
@@ -148,6 +151,7 @@ class AdminDashboardWidget extends StatelessWidget {
                           Colors.orange,
                         ),
                         _buildActivityItem(
+                          context,
                           'Security scan completed',
                           'No vulnerabilities found',
                           '6 hours ago',
@@ -155,6 +159,7 @@ class AdminDashboardWidget extends StatelessWidget {
                           Colors.green,
                         ),
                         _buildActivityItem(
+                          context,
                           'Database maintenance',
                           'Optimization completed',
                           '12 hours ago',
@@ -308,6 +313,7 @@ class AdminDashboardWidget extends StatelessWidget {
   }
 
   Widget _buildActivityItem(
+    BuildContext context,
     String title,
     String subtitle,
     String time,

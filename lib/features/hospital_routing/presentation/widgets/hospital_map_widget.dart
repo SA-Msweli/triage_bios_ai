@@ -21,7 +21,7 @@ class HospitalMapWidget extends StatefulWidget {
 
 class _HospitalMapWidgetState extends State<HospitalMapWidget> {
   final Logger _logger = Logger();
-  GoogleMapController? _mapController;
+  GoogleMapController? _mapController; // Used in onMapCreated callback for future map operations
   Position? _currentPosition;
   List<Hospital> _hospitals = [];
   Hospital? _selectedHospital;

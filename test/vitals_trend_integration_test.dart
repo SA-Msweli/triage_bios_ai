@@ -1,7 +1,6 @@
 // Integration test for vitals trend analysis
 // This test verifies that the vitals trend analysis works correctly
 
-import 'dart:math';
 
 void main() {
   print('=== Vitals Trend Analysis Integration Test ===');

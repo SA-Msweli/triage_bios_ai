@@ -15,9 +15,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   final AuthService _authService = AuthService();
-  
+
   bool _isLogin = true;
   bool _isLoading = false;
   UserRole _selectedRole = UserRole.patient;
@@ -68,17 +68,21 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 16),
                         Text(
                           AppConstants.appName,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Web Portal',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                         const SizedBox(height: 32),
 
@@ -86,7 +90,10 @@ class _LoginPageState extends State<LoginPage> {
                         SegmentedButton<bool>(
                           segments: const [
                             ButtonSegment(value: true, label: Text('Login')),
-                            ButtonSegment(value: false, label: Text('Register')),
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Register'),
+                            ),
                           ],
                           selected: {_isLogin},
                           onSelectionChanged: (selection) {
@@ -204,7 +211,9 @@ class _LoginPageState extends State<LoginPage> {
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : Text(_isLogin ? 'Login' : 'Register'),
                           ),
@@ -230,7 +239,9 @@ class _LoginPageState extends State<LoginPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -238,16 +249,14 @@ class _LoginPageState extends State<LoginPage> {
                             children: [
                               Text(
                                 'Demo Credentials:',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Patient: patient@demo.com\nCaregiver: caregiver@demo.com\nDoctor: doctor@demo.com\nPassword: demo123',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontFamily: 'monospace',
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontFamily: 'monospace'),
                               ),
                             ],
                           ),
@@ -270,7 +279,7 @@ class _LoginPageState extends State<LoginPage> {
         return 'Patient';
       case UserRole.caregiver:
         return 'Family/Caregiver';
-      case UserRole.healthcare_provider:
+      case UserRole.healthcareProvider:
         return 'Healthcare Provider';
       case UserRole.admin:
         return 'Administrator';
@@ -286,7 +295,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       AuthResult result;
-      
+
       if (_isLogin) {
         result = await _authService.login(
           email: _emailController.text.trim(),
@@ -298,8 +307,8 @@ class _LoginPageState extends State<LoginPage> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
           role: _selectedRole,
-          phoneNumber: _phoneController.text.trim().isEmpty 
-              ? null 
+          phoneNumber: _phoneController.text.trim().isEmpty
+              ? null
               : _phoneController.text.trim(),
         );
       }
@@ -339,7 +348,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final result = await _authService.loginAsGuest();
-      
+
       if (result.success && mounted) {
         Navigator.of(context).pushReplacementNamed('/portal');
       } else if (mounted) {

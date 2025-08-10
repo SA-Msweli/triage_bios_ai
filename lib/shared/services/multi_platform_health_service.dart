@@ -16,7 +16,7 @@ class MultiPlatformHealthService {
   SamsungHealthService? _samsungHealth;
   FitbitService? _fitbitService;
   
-  List<WearableDevice> _connectedDevices = [];
+  final List<WearableDevice> _connectedDevices = [];
   bool _isInitialized = false;
 
   /// Initialize all available health platforms

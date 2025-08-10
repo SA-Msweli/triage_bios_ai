@@ -370,158 +370,7 @@ class WatsonxService {
     }
   }
 
-  // Mock Watson X.ai response for MVP demo (fallback)
-  Future<Map<String, dynamic>> _mockWatsonxResponse(
-    String prompt,
-    PatientVitals? vitals,
-  ) async {
-    // Simulate API call delay
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // Analyze symptoms for demo scoring
-    final symptomsLower = prompt.toLowerCase();
-    double baseScore = 3.0; // Default standard priority
-
-    // Simulate AI analysis of symptoms
-    if (symptomsLower.contains('chest pain') ||
-        symptomsLower.contains('difficulty breathing') ||
-        symptomsLower.contains('severe pain') ||
-        symptomsLower.contains('severe abdominal pain')) {
-      baseScore = 7.0;
-    } else if (symptomsLower.contains('headache') ||
-        symptomsLower.contains('nausea') ||
-        symptomsLower.contains('dizziness')) {
-      baseScore = 5.0;
-    } else if (symptomsLower.contains('fever') ||
-        symptomsLower.contains('cough')) {
-      baseScore = 4.0;
-    }
-
-    // Add vitals boost if available
-    final vitalsBoost = vitals?.vitalsSeverityBoost ?? 0.0;
-    final finalScore = (baseScore + vitalsBoost).clamp(0.0, 10.0);
-
-    // Generate mock response based on score
-    String urgencyLevel;
-    String timeToTreatment;
-    List<String> recommendedActions;
-
-    if (finalScore >= 8.0) {
-      urgencyLevel = 'critical';
-      timeToTreatment = 'Immediate (within 15 minutes)';
-      recommendedActions = [
-        'Call 911 immediately',
-        'Do not drive yourself',
-        'Stay calm and monitor symptoms',
-      ];
-    } else if (finalScore >= 6.0) {
-      urgencyLevel = 'urgent';
-      timeToTreatment = 'Within 1 hour';
-      recommendedActions = [
-        'Seek emergency care promptly',
-        'Monitor symptoms closely',
-        'Have someone drive you',
-      ];
-    } else if (finalScore >= 4.0) {
-      urgencyLevel = 'standard';
-      timeToTreatment = 'Within 2-4 hours';
-      recommendedActions = [
-        'Visit emergency room when convenient',
-        'Monitor symptoms',
-        'Consider urgent care',
-      ];
-    } else {
-      urgencyLevel = 'non_urgent';
-      timeToTreatment = 'Within 24 hours or schedule appointment';
-      recommendedActions = [
-        'Schedule appointment with primary care',
-        'Monitor symptoms',
-        'Rest and hydrate',
-      ];
-    }
-
-    return {
-      'severity_score': finalScore,
-      'confidence_lower': (finalScore - 0.5).clamp(0.0, 10.0),
-      'confidence_upper': (finalScore + 0.5).clamp(0.0, 10.0),
-      'explanation': _generateExplanation(symptomsLower, vitals, finalScore),
-      'key_symptoms': _extractKeySymptoms(symptomsLower),
-      'concerning_findings': _extractConcerningFindings(symptomsLower, vitals),
-      'recommended_actions': recommendedActions,
-      'urgency_level': urgencyLevel,
-      'time_to_treatment': timeToTreatment,
-    };
-  }
-
-  String _generateExplanation(
-    String symptoms,
-    PatientVitals? vitals,
-    double score,
-  ) {
-    final parts = <String>[];
-
-    if (symptoms.contains('chest pain')) {
-      parts.add(
-        'Chest pain requires immediate evaluation to rule out cardiac events',
-      );
-    } else if (symptoms.contains('difficulty breathing')) {
-      parts.add(
-        'Breathing difficulties can indicate serious respiratory or cardiac issues',
-      );
-    } else if (symptoms.contains('severe pain')) {
-      parts.add('Severe pain warrants prompt medical evaluation');
-    } else {
-      parts.add(
-        'Symptoms suggest ${score >= 6 ? 'urgent' : 'routine'} medical attention needed',
-      );
-    }
-
-    if (vitals != null && vitals.vitalsSeverityBoost > 0) {
-      parts.add('Concerning vital signs detected, increasing urgency level');
-    }
-
-    return parts.join('. ');
-  }
-
-  List<String> _extractKeySymptoms(String symptoms) {
-    final keySymptoms = <String>[];
-
-    if (symptoms.contains('chest pain')) keySymptoms.add('chest pain');
-    if (symptoms.contains('difficulty breathing')) {
-      keySymptoms.add('difficulty breathing');
-    }
-    if (symptoms.contains('headache')) keySymptoms.add('headache');
-    if (symptoms.contains('nausea')) keySymptoms.add('nausea');
-    if (symptoms.contains('fever')) keySymptoms.add('fever');
-    if (symptoms.contains('dizziness')) keySymptoms.add('dizziness');
-
-    return keySymptoms.isEmpty ? ['general symptoms'] : keySymptoms;
-  }
-
-  List<String> _extractConcerningFindings(
-    String symptoms,
-    PatientVitals? vitals,
-  ) {
-    final findings = <String>[];
-
-    if (vitals?.hasCriticalVitals == true) {
-      if (vitals!.heartRate != null &&
-          (vitals.heartRate! > 120 || vitals.heartRate! < 50)) {
-        findings.add('abnormal heart rate');
-      }
-      if (vitals.oxygenSaturation != null && vitals.oxygenSaturation! < 95) {
-        findings.add('low oxygen saturation');
-      }
-      if (vitals.temperature != null && vitals.temperature! > 101.5) {
-        findings.add('high fever');
-      }
-    }
-
-    if (symptoms.contains('severe')) findings.add('severe symptoms reported');
-    if (symptoms.contains('sudden')) findings.add('sudden onset');
-
-    return findings;
-  }
+  // Mock methods removed - unused code
 
   /// Combine AI results with medical algorithm results
   Map<String, dynamic> _combineAiAndMedicalResults({
@@ -537,7 +386,7 @@ class WatsonxService {
         'confidence_lower': (medicalAssessment.finalScore - (1.0 - medicalAssessment.confidence)).clamp(0.0, 10.0),
         'confidence_upper': (medicalAssessment.finalScore + (1.0 - medicalAssessment.confidence)).clamp(0.0, 10.0),
         'explanation': medicalAssessment.clinicalReasoning,
-        'key_symptoms': _extractKeySymptoms(medicalAssessment),
+        'key_symptoms': medicalAssessment.riskFactors,
         'concerning_findings': medicalAssessment.riskFactors,
         'recommended_actions': medicalAssessment.recommendations,
         'urgency_level': _getUrgencyLevel(medicalAssessment.finalScore),
@@ -600,24 +449,7 @@ class WatsonxService {
     };
   }
 
-  List<String> _extractKeySymptoms(MedicalAssessmentResult assessment) {
-    // Extract key symptoms from medical assessment
-    final symptoms = <String>[];
-    
-    if (assessment.esiLevel <= 2) {
-      symptoms.add('High-acuity presentation');
-    }
-    
-    if (assessment.mewsScore >= 3) {
-      symptoms.add('Abnormal vital signs');
-    }
-    
-    if (assessment.symptomSeverity >= 6) {
-      symptoms.add('Significant symptom burden');
-    }
 
-    return symptoms.isEmpty ? ['General symptoms'] : symptoms;
-  }
 
   List<String> _mergeRecommendations(List<String> aiRecs, List<String> medicalRecs) {
     final merged = <String>[];
