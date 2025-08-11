@@ -22,7 +22,7 @@ dependencies:
   
   # Multi-modal input
   image_picker: ^1.0.7
-  speech_to_text: ^6.6.0
+  # speech_to_text: ^6.6.0  # Temporarily disabled for Android testing
   flutter_tts: ^4.0.2
   
   # Health & Wearables

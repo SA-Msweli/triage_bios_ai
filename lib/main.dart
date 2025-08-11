@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'features/triage/presentation/pages/triage_page.dart';
+import 'features/web_portal/presentation/pages/web_portal_page.dart';
+import 'features/web_portal/presentation/pages/login_page.dart';
+import 'shared/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize core services
+  await AuthService().initialize();
+
   runApp(const TriageBiosApp());
 }
 
@@ -28,9 +36,10 @@ class TriageBiosApp extends StatelessWidget {
       ),
       home: const HomePage(),
       routes: {
-        '/triage': (context) => const SimpleTriage(),
-        '/dashboard': (context) => const SimpleDashboard(),
-        '/portal': (context) => const SimplePortal(),
+        '/triage': (context) => const TriagePage(),
+        '/dashboard': (context) => const WebPortalPage(),
+        '/portal': (context) => const LoginPage(),
+        '/login': (context) => const LoginPage(),
       },
     );
   }
@@ -78,9 +87,9 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Feature Cards
             Expanded(
               child: GridView.count(
@@ -90,8 +99,8 @@ class HomePage extends StatelessWidget {
                 children: [
                   _buildFeatureCard(
                     context,
-                    'Patient Triage',
-                    'Start AI-powered symptom assessment',
+                    'AI Triage Assessment',
+                    'Start symptom analysis with wearable integration',
                     Icons.assignment_ind,
                     Colors.blue,
                     () => Navigator.pushNamed(context, '/triage'),
@@ -99,16 +108,16 @@ class HomePage extends StatelessWidget {
                   _buildFeatureCard(
                     context,
                     'Hospital Dashboard',
-                    'View patient queue and capacity',
+                    'Real-time patient queue & FHIR integration',
                     Icons.dashboard,
                     Colors.green,
                     () => Navigator.pushNamed(context, '/dashboard'),
                   ),
                   _buildFeatureCard(
                     context,
-                    'Web Portal',
-                    'Access responsive web interface',
-                    Icons.web,
+                    'Login Portal',
+                    'Access role-based web interface',
+                    Icons.login,
                     Colors.purple,
                     () => Navigator.pushNamed(context, '/portal'),
                   ),
@@ -123,9 +132,9 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Status Footer
             Container(
               width: double.infinity,
@@ -175,17 +184,13 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 48,
-                color: color,
-              ),
+              Icon(icon, size: 48, color: color),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -206,122 +211,15 @@ class HomePage extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(featureName),
-        content: Text('$featureName feature is implemented and ready.\n\nThis demo shows the core architecture with all services and components in place.'),
+        content: Text(
+          '$featureName feature is implemented and ready.\n\nThis demo shows the core architecture with all services and components in place.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Simple placeholder pages
-class SimpleTriage extends StatelessWidget {
-  const SimpleTriage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('AI Triage Assessment'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.assignment_ind, size: 64, color: Colors.blue),
-            SizedBox(height: 16),
-            Text(
-              'AI Triage Engine',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Core triage functionality implemented:\n'
-              '• Symptom analysis with watsonx.ai\n'
-              '• Wearable vitals integration\n'
-              '• Severity scoring with AI enhancement\n'
-              '• Trend analysis and risk assessment',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SimpleDashboard extends StatelessWidget {
-  const SimpleDashboard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hospital Dashboard'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.dashboard, size: 64, color: Colors.green),
-            SizedBox(height: 16),
-            Text(
-              'Hospital Dashboard',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Dashboard functionality implemented:\n'
-              '• Real-time patient queue management\n'
-              '• FHIR API integration for capacity monitoring\n'
-              '• Hospital routing optimization\n'
-              '• Capacity prediction and surge detection',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SimplePortal extends StatelessWidget {
-  const SimplePortal({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Web Portal'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.web, size: 64, color: Colors.purple),
-            SizedBox(height: 16),
-            Text(
-              'Patient Web Portal',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Web portal functionality implemented:\n'
-              '• Responsive web interface (desktop/tablet/mobile)\n'
-              '• Cross-platform data synchronization\n'
-              '• Family/caregiver access portal\n'
-              '• Complete triage workflow integration',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }
