@@ -347,3 +347,29 @@ l10n.yaml.bak
 
 # Very Good CLI
 .vgv/
+
+# Additional Flutter/Dart specific
+*.lock
+.packages
+.pub/
+.pub-cache/
+
+# Windows specific
+windows/flutter/ephemeral/
+
+# Additional IDE files
+*.code-workspace
+.history/
+
+# Additional build artifacts
+*.dill
+*.incremental.dill
+
+# Additional environment and config files
+.env.*
+!.env.example
+config/local_*.dart
+
+# Additional generated files
+*.mocks.dart
+*.config.dart
