@@ -13,31 +13,31 @@ dependencies:
 
   # Essential UI
   cupertino_icons: ^1.0.8
-  
+
   # State Management
   flutter_bloc: ^9.1.1
-  
+
   # JSON Serialization
   json_annotation: ^4.9.0
-  
+
   # Multi-modal input
   image_picker: ^1.0.7
-  speech_to_text: ^6.6.0
+  # speech_to_text: ^7.2.0 # Temporarily disabled due to Android Kotlin compatibility issues
   flutter_tts: ^4.0.2
-  
+
   # Health & Wearables
   health: ^13.1.1
-  
+
   # Location & Maps
   geolocator: ^14.0.2
   google_maps_flutter: ^2.9.0
-  
+
   # Internationalization
   intl: ^0.20.2
-  
+
   # Configuration & Environment
   flutter_dotenv: ^5.1.0
-  
+
   # Essential utilities
   http: ^1.2.2
   dio: ^5.7.0
@@ -51,7 +51,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  
+
   # Code Generation
   build_runner: ^2.4.13
   json_serializable: ^6.8.0

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Web-optimized vitals input and display widget
-class WebVitalsDisplay extends StatefulWidget {
+/// Responsive vitals input and display widget
+class VitalsDisplayWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
   final VoidCallback onNext;
   final VoidCallback onBack;
 
-  const WebVitalsDisplay({
+  const VitalsDisplayWidget({
     super.key,
     required this.onDataChanged,
     required this.onNext,
@@ -15,16 +15,16 @@ class WebVitalsDisplay extends StatefulWidget {
   });
 
   @override
-  State<WebVitalsDisplay> createState() => _WebVitalsDisplayState();
+  State<VitalsDisplayWidget> createState() => _VitalsDisplayWidgetState();
 }
 
-class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
+class _VitalsDisplayWidgetState extends State<VitalsDisplayWidget> {
   final _heartRateController = TextEditingController();
   final _systolicController = TextEditingController();
   final _diastolicController = TextEditingController();
   final _temperatureController = TextEditingController();
   final _oxygenController = TextEditingController();
-  
+
   bool _hasWearableDevice = false;
   bool _isConnecting = false;
   String _deviceStatus = 'Not connected';
@@ -41,39 +41,57 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Vital Signs',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 800;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Vital Signs',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Connect a wearable device or manually enter your vital signs.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 32),
+
+              // Wearable device connection
+              _buildWearableConnection(),
+              const SizedBox(height: 32),
+
+              if (isWideScreen) ...[
+                // Wide screen layout
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: _buildManualVitalsInput()),
+                    const SizedBox(width: 24),
+                    Expanded(child: _buildVitalsSummary()),
+                  ],
+                ),
+              ] else ...[
+                // Narrow screen layout
+                _buildManualVitalsInput(),
+                const SizedBox(height: 32),
+                _buildVitalsSummary(),
+              ],
+
+              const SizedBox(height: 32),
+              _buildActionButtons(),
+            ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Connect a wearable device or manually enter your vital signs.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 32),
-
-        // Wearable device connection
-        _buildWearableConnection(),
-        const SizedBox(height: 32),
-
-        // Manual vitals input
-        _buildManualVitalsInput(),
-        const SizedBox(height: 32),
-
-        // Vitals summary
-        _buildVitalsSummary(),
-        const SizedBox(height: 32),
-
-        // Action buttons
-        _buildActionButtons(),
-      ],
+        );
+      },
     );
   }
 
@@ -90,32 +108,38 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
                 const SizedBox(width: 12),
                 Text(
                   'Wearable Device',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             Text(
               'Connect your smartwatch or fitness tracker for automatic vital signs monitoring.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
                 Icon(
-                  _hasWearableDevice ? Icons.check_circle : Icons.circle_outlined,
+                  _hasWearableDevice
+                      ? Icons.check_circle
+                      : Icons.circle_outlined,
                   color: _hasWearableDevice ? Colors.green : Colors.grey,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _deviceStatus,
                   style: TextStyle(
-                    color: _hasWearableDevice ? Colors.green.shade700 : Colors.grey.shade600,
-                    fontWeight: _hasWearableDevice ? FontWeight.bold : FontWeight.normal,
+                    color: _hasWearableDevice
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
+                    fontWeight: _hasWearableDevice
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
                 const Spacer(),
@@ -128,11 +152,13 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
                 else
                   ElevatedButton(
                     onPressed: _connectWearableDevice,
-                    child: Text(_hasWearableDevice ? 'Disconnect' : 'Connect Device'),
+                    child: Text(
+                      _hasWearableDevice ? 'Disconnect' : 'Connect Device',
+                    ),
                   ),
               ],
             ),
-            
+
             if (_hasWearableDevice) ...[
               const SizedBox(height: 16),
               Container(
@@ -183,13 +209,13 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
           children: [
             Text(
               'Manual Entry',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
-            // Heart Rate
+
+            // Heart Rate and Oxygen Saturation
             Row(
               children: [
                 Expanded(
@@ -218,7 +244,7 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Blood Pressure
             Row(
               children: [
@@ -249,8 +275,8 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
                 ),
               ],
             ),
-            const SizedBox(width: 16),
-            
+            const SizedBox(height: 16),
+
             // Temperature
             _buildVitalInput(
               controller: _temperatureController,
@@ -287,9 +313,9 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -300,7 +326,10 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
             hintText: hint,
             suffixText: unit,
             border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
           ),
           inputFormatters: inputFormatters,
           onChanged: (_) => _updateVitalsData(),
@@ -334,7 +363,7 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             Wrap(
               spacing: 16,
               runSpacing: 12,
@@ -343,9 +372,9 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
                 return _buildVitalChip(entry.key, entry.value, status);
               }).toList(),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -355,7 +384,11 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue.shade700,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -390,14 +423,17 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
 
     return Chip(
       avatar: Icon(
-        status == 'normal' ? Icons.check_circle : 
-        status == 'warning' ? Icons.warning : Icons.error,
+        status == 'normal'
+            ? Icons.check_circle
+            : status == 'warning'
+            ? Icons.warning
+            : Icons.error,
         color: color,
         size: 16,
       ),
       label: Text('$vital: $value'),
-      backgroundColor: color.withOpacity(0.1),
-      side: BorderSide(color: color.withOpacity(0.3)),
+      backgroundColor: color.withValues(alpha: 0.1),
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
     );
   }
 
@@ -435,7 +471,9 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
     setState(() {
       _isConnecting = false;
       _hasWearableDevice = !_hasWearableDevice;
-      _deviceStatus = _hasWearableDevice ? 'Apple Watch connected' : 'Not connected';
+      _deviceStatus = _hasWearableDevice
+          ? 'Apple Watch connected'
+          : 'Not connected';
     });
 
     if (_hasWearableDevice) {
@@ -471,12 +509,14 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
 
   Map<String, dynamic> _getCurrentVitals() {
     final vitals = <String, dynamic>{};
-    
+
     if (_heartRateController.text.isNotEmpty) {
       vitals['Heart Rate'] = '${_heartRateController.text} bpm';
     }
-    if (_systolicController.text.isNotEmpty && _diastolicController.text.isNotEmpty) {
-      vitals['Blood Pressure'] = '${_systolicController.text}/${_diastolicController.text} mmHg';
+    if (_systolicController.text.isNotEmpty &&
+        _diastolicController.text.isNotEmpty) {
+      vitals['Blood Pressure'] =
+          '${_systolicController.text}/${_diastolicController.text} mmHg';
     }
     if (_temperatureController.text.isNotEmpty) {
       vitals['Temperature'] = '${_temperatureController.text}°F';
@@ -484,7 +524,7 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
     if (_oxygenController.text.isNotEmpty) {
       vitals['Oxygen Sat'] = '${_oxygenController.text}%';
     }
-    
+
     return vitals;
   }
 
@@ -518,11 +558,15 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
 
   String _getVitalsRecommendation() {
     final vitals = _getCurrentVitals();
-    final warnings = vitals.entries.where((e) => _getVitalStatus(e.key, e.value) != 'normal').toList();
-    
+    final warnings = vitals.entries
+        .where((e) => _getVitalStatus(e.key, e.value) != 'normal')
+        .toList();
+
     if (warnings.isEmpty) {
       return 'Your vital signs appear to be within normal ranges.';
-    } else if (warnings.any((e) => _getVitalStatus(e.key, e.value) == 'critical')) {
+    } else if (warnings.any(
+      (e) => _getVitalStatus(e.key, e.value) == 'critical',
+    )) {
       return 'Some vital signs are concerning. You will be prioritized for immediate care.';
     } else {
       return 'Some vital signs are outside normal ranges. This will be considered in your triage assessment.';
@@ -536,7 +580,7 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
   void _updateVitalsData() {
     final vitals = _getCurrentVitals();
     final vitalsSeverityBoost = _calculateVitalsSeverityBoost();
-    
+
     widget.onDataChanged({
       'vitals': vitals,
       'hasWearableDevice': _hasWearableDevice,
@@ -547,28 +591,40 @@ class _WebVitalsDisplayState extends State<WebVitalsDisplay> {
 
   double _calculateVitalsSeverityBoost() {
     double boost = 0.0;
-    
+
     // Heart rate boost
     final hr = int.tryParse(_heartRateController.text) ?? 0;
-    if (hr > 120 || hr < 50) boost += 2.0;
-    else if (hr > 100 || hr < 60) boost += 1.0;
-    
+    if (hr > 120 || hr < 50) {
+      boost += 2.0;
+    } else if (hr > 100 || hr < 60) {
+      boost += 1.0;
+    }
+
     // Oxygen saturation boost
     final o2 = int.tryParse(_oxygenController.text) ?? 100;
-    if (o2 < 90) boost += 3.0;
-    else if (o2 < 95) boost += 1.5;
-    
+    if (o2 < 90) {
+      boost += 3.0;
+    } else if (o2 < 95) {
+      boost += 1.5;
+    }
+
     // Temperature boost
     final temp = double.tryParse(_temperatureController.text) ?? 98.6;
-    if (temp > 103) boost += 2.5;
-    else if (temp > 101.5) boost += 1.5;
-    
+    if (temp > 103) {
+      boost += 2.5;
+    } else if (temp > 101.5) {
+      boost += 1.5;
+    }
+
     // Blood pressure boost
     final systolic = int.tryParse(_systolicController.text) ?? 120;
     final diastolic = int.tryParse(_diastolicController.text) ?? 80;
-    if (systolic > 180 || diastolic > 120) boost += 3.0;
-    else if (systolic < 90 || diastolic < 60) boost += 2.0;
-    
+    if (systolic > 180 || diastolic > 120) {
+      boost += 3.0;
+    } else if (systolic < 90 || diastolic < 60) {
+      boost += 2.0;
+    }
+
     return boost.clamp(0.0, 3.0);
   }
 }

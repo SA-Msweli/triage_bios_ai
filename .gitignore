@@ -76,7 +76,6 @@ app.*.map.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
 # Web related
-lib/generated_plugin_registrant.dart
 
 # Flutter web build output
 build/web/

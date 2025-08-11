@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/services/auth_service.dart';
 
 class AdminDashboardWidget extends StatelessWidget {
   const AdminDashboardWidget({super.key});
@@ -14,9 +13,9 @@ class AdminDashboardWidget extends StatelessWidget {
           // Welcome header
           Text(
             'System Administration',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             'Monitor system performance and manage users',
@@ -87,17 +86,28 @@ class AdminDashboardWidget extends StatelessWidget {
                       children: [
                         Text(
                           'System Health',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
-                        
-                        _buildHealthItem('API Response Time', '245ms', Colors.green),
+
+                        _buildHealthItem(
+                          'API Response Time',
+                          '245ms',
+                          Colors.green,
+                        ),
                         const SizedBox(height: 12),
-                        _buildHealthItem('Database Performance', '98%', Colors.green),
+                        _buildHealthItem(
+                          'Database Performance',
+                          '98%',
+                          Colors.green,
+                        ),
                         const SizedBox(height: 12),
-                        _buildHealthItem('AI Service Status', 'Online', Colors.green),
+                        _buildHealthItem(
+                          'AI Service Status',
+                          'Online',
+                          Colors.green,
+                        ),
                         const SizedBox(height: 12),
                         _buildHealthItem('Storage Usage', '67%', Colors.orange),
                         const SizedBox(height: 12),
@@ -120,12 +130,11 @@ class AdminDashboardWidget extends StatelessWidget {
                       children: [
                         Text(
                           'Recent System Activity',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         _buildActivityItem(
                           context,
                           'New user registered',
@@ -199,7 +208,7 @@ class AdminDashboardWidget extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Row(
                     children: [
                       Expanded(
@@ -290,23 +299,14 @@ class AdminDashboardWidget extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
         const Spacer(),
         Text(
           value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
       ],
     );

@@ -282,12 +282,85 @@ class _HospitalDashboardPageState extends State<HospitalDashboardPage> {
           const SizedBox(width: 16),
         ],
       ),
-      body: Row(
-        children: [
-          // Main content area
-          Expanded(
-            flex: 3,
-            child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWideScreen = constraints.maxWidth > 1000;
+
+          if (isWideScreen) {
+            return Row(
+              children: [
+                // Main content area
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      // Real-time stats bar
+                      RealTimeStatsWidget(capacity: _capacity),
+
+                      // Emergency alerts
+                      EmergencyAlertsWidget(patientQueue: _patientQueue),
+
+                      // Patient queue
+                      Expanded(
+                        child: PatientQueueWidget(
+                          patientQueue: _patientQueue,
+                          onPatientSelected: (patient) {
+                            _showPatientDetails(patient);
+                          },
+                          onPatientCalled: (patient) {
+                            setState(() {
+                              _patientQueue.remove(patient);
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${patient.name} called for treatment',
+                                ),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right sidebar
+                Container(
+                  width: 350,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      left: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Capacity overview
+                      CapacityOverviewWidget(capacity: _capacity),
+
+                      // Quick actions
+                      _buildQuickActions(),
+
+                      // Recent activity
+                      _buildRecentActivity(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          } else {
+            // Mobile/tablet layout
+            return Column(
               children: [
                 // Real-time stats bar
                 RealTimeStatsWidget(capacity: _capacity),
@@ -318,36 +391,9 @@ class _HospitalDashboardPageState extends State<HospitalDashboardPage> {
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Right sidebar
-          Container(
-            width: 350,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              border: Border(
-                left: BorderSide(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.2),
-                ),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Capacity overview
-                CapacityOverviewWidget(capacity: _capacity),
-
-                // Quick actions
-                _buildQuickActions(),
-
-                // Recent activity
-                _buildRecentActivity(),
-              ],
-            ),
-          ),
-        ],
+            );
+          }
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addNewPatient,

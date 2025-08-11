@@ -112,43 +112,49 @@ class VitalsDisplayWidget extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Vitals grid
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 2.5,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          children: [
-            if (vitals.heartRate != null)
-              _VitalCard(
-                icon: Icons.favorite,
-                label: 'Heart Rate',
-                value: '${vitals.heartRate} bpm',
-                isAbnormal: vitals.heartRate! > 100 || vitals.heartRate! < 60,
-              ),
-            if (vitals.oxygenSaturation != null)
-              _VitalCard(
-                icon: Icons.air,
-                label: 'SpO2',
-                value: '${vitals.oxygenSaturation?.toStringAsFixed(1)}%',
-                isAbnormal: vitals.oxygenSaturation! < 95,
-              ),
-            if (vitals.bloodPressure != null)
-              _VitalCard(
-                icon: Icons.monitor_heart,
-                label: 'Blood Pressure',
-                value: vitals.bloodPressure!,
-                isAbnormal: _isBloodPressureAbnormal(vitals.bloodPressure!),
-              ),
-            if (vitals.temperature != null)
-              _VitalCard(
-                icon: Icons.thermostat,
-                label: 'Temperature',
-                value: '${vitals.temperature?.toStringAsFixed(1)}°F',
-                isAbnormal: vitals.temperature! > 99.5,
-              ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 400 ? 2 : 1;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: crossAxisCount == 2 ? 2.5 : 4.0,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              children: [
+                if (vitals.heartRate != null)
+                  _VitalCard(
+                    icon: Icons.favorite,
+                    label: 'Heart Rate',
+                    value: '${vitals.heartRate} bpm',
+                    isAbnormal:
+                        vitals.heartRate! > 100 || vitals.heartRate! < 60,
+                  ),
+                if (vitals.oxygenSaturation != null)
+                  _VitalCard(
+                    icon: Icons.air,
+                    label: 'SpO2',
+                    value: '${vitals.oxygenSaturation?.toStringAsFixed(1)}%',
+                    isAbnormal: vitals.oxygenSaturation! < 95,
+                  ),
+                if (vitals.bloodPressure != null)
+                  _VitalCard(
+                    icon: Icons.monitor_heart,
+                    label: 'Blood Pressure',
+                    value: vitals.bloodPressure!,
+                    isAbnormal: _isBloodPressureAbnormal(vitals.bloodPressure!),
+                  ),
+                if (vitals.temperature != null)
+                  _VitalCard(
+                    icon: Icons.thermostat,
+                    label: 'Temperature',
+                    value: '${vitals.temperature?.toStringAsFixed(1)}°F',
+                    isAbnormal: vitals.temperature! > 99.5,
+                  ),
+              ],
+            );
+          },
         ),
 
         if (vitals.hasCriticalVitals) ...[
