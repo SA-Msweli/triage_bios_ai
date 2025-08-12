@@ -29,7 +29,7 @@ void testResponsiveLayout() {
     final width = screen['width'] as int;
     final layout = _determineLayout(width);
     
-    print('✓ Screen ${width}x${screen['height']}: ${layout} layout');
+    print('✓ Screen ${width}x${screen['height']}: $layout layout');
     print('  - Navigation: ${_getNavigationStyle(layout)}');
     print('  - Content: ${_getContentLayout(layout)}');
     print('  - Sidebar: ${_getSidebarVisibility(layout)}');

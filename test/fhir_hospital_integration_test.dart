@@ -111,8 +111,8 @@ void testHospitalRoutingOptimization() {
   final travelTime = ((optimal['distance'] as double) / 40.0 * 60).round();
   final waitTime = (15 * (1 + (optimal['occupancy'] as double) * 2)).round();
   
-  print('✓ Estimated travel time: ${travelTime} minutes');
-  print('✓ Estimated wait time: ${waitTime} minutes');
+  print('✓ Estimated travel time: $travelTime minutes');
+  print('✓ Estimated wait time: $waitTime minutes');
   print('✓ Treatment start time: ${DateTime.now().add(Duration(minutes: travelTime + waitTime))}');
 }
 

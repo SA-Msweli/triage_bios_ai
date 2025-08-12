@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// Web-optimized triage form for symptom input
-class WebTriageForm extends StatefulWidget {
+/// Responsive triage form widget for symptom input
+class TriageFormWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
   final VoidCallback onNext;
 
-  const WebTriageForm({
+  const TriageFormWidget({
     super.key,
     required this.onDataChanged,
     required this.onNext,
   });
 
   @override
-  State<WebTriageForm> createState() => _WebTriageFormState();
+  State<TriageFormWidget> createState() => _TriageFormWidgetState();
 }
 
-class _WebTriageFormState extends State<WebTriageForm> {
+class _TriageFormWidgetState extends State<TriageFormWidget> {
   final _formKey = GlobalKey<FormState>();
   final _symptomsController = TextEditingController();
   final _durationController = TextEditingController();
-  
+
   String _selectedSeverity = 'moderate';
-  List<String> _selectedSymptoms = [];
-  
+  final List<String> _selectedSymptoms = [];
+
   final List<String> _commonSymptoms = [
     'Chest pain',
     'Shortness of breath',
@@ -45,46 +45,77 @@ class _WebTriageFormState extends State<WebTriageForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Describe Your Symptoms',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 800;
+
+        return Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Describe Your Symptoms',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please provide detailed information about your current symptoms.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 32),
+
+                if (isWideScreen) ...[
+                  // Wide screen layout
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            _buildQuickSymptomSelection(),
+                            const SizedBox(height: 24),
+                            _buildSymptomDescription(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _buildSymptomDuration(),
+                            const SizedBox(height: 24),
+                            _buildSeverityAssessment(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  // Narrow screen layout
+                  _buildQuickSymptomSelection(),
+                  const SizedBox(height: 24),
+                  _buildSymptomDescription(),
+                  const SizedBox(height: 24),
+                  _buildSymptomDuration(),
+                  const SizedBox(height: 24),
+                  _buildSeverityAssessment(),
+                ],
+
+                const SizedBox(height: 32),
+                _buildActionButtons(),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Please provide detailed information about your current symptoms.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Quick symptom selection
-          _buildQuickSymptomSelection(),
-          const SizedBox(height: 24),
-
-          // Detailed symptom description
-          _buildSymptomDescription(),
-          const SizedBox(height: 24),
-
-          // Symptom duration
-          _buildSymptomDuration(),
-          const SizedBox(height: 24),
-
-          // Severity assessment
-          _buildSeverityAssessment(),
-          const SizedBox(height: 32),
-
-          // Action buttons
-          _buildActionButtons(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -94,9 +125,9 @@ class _WebTriageFormState extends State<WebTriageForm> {
       children: [
         Text(
           'Common Symptoms',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
@@ -137,16 +168,17 @@ class _WebTriageFormState extends State<WebTriageForm> {
       children: [
         Text(
           'Detailed Description',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _symptomsController,
           maxLines: 4,
           decoration: const InputDecoration(
-            hintText: 'Please describe your symptoms in detail, including when they started, what makes them better or worse, and any other relevant information...',
+            hintText:
+                'Please describe your symptoms in detail, including when they started, what makes them better or worse, and any other relevant information...',
             border: OutlineInputBorder(),
           ),
           validator: (value) {
@@ -167,9 +199,9 @@ class _WebTriageFormState extends State<WebTriageForm> {
       children: [
         Text(
           'How long have you been experiencing these symptoms?',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         TextFormField(
@@ -197,12 +229,12 @@ class _WebTriageFormState extends State<WebTriageForm> {
       children: [
         Text(
           'How would you rate your current pain/discomfort level?',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        
+
         // Severity scale
         Container(
           padding: const EdgeInsets.all(20),
@@ -217,66 +249,63 @@ class _WebTriageFormState extends State<WebTriageForm> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Mild', style: TextStyle(color: Colors.green.shade700)),
-                  Text('Moderate', style: TextStyle(color: Colors.orange.shade700)),
+                  Text(
+                    'Moderate',
+                    style: TextStyle(color: Colors.orange.shade700),
+                  ),
                   Text('Severe', style: TextStyle(color: Colors.red.shade700)),
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Mild'),
-                      subtitle: const Text('1-3/10'),
-                      value: 'mild',
-                      groupValue: _selectedSeverity,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedSeverity = value!;
-                        });
-                        _updateData();
-                      },
-                      activeColor: Colors.green.shade600,
-                    ),
+                  RadioListTile<String>(
+                    title: const Text('Mild'),
+                    subtitle: const Text('1-3/10'),
+                    value: 'mild',
+                    groupValue: _selectedSeverity,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSeverity = value!;
+                      });
+                      _updateData();
+                    },
+                    activeColor: Colors.green.shade600,
                   ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Moderate'),
-                      subtitle: const Text('4-6/10'),
-                      value: 'moderate',
-                      groupValue: _selectedSeverity,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedSeverity = value!;
-                        });
-                        _updateData();
-                      },
-                      activeColor: Colors.orange.shade600,
-                    ),
+                  RadioListTile<String>(
+                    title: const Text('Moderate'),
+                    subtitle: const Text('4-6/10'),
+                    value: 'moderate',
+                    groupValue: _selectedSeverity,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSeverity = value!;
+                      });
+                      _updateData();
+                    },
+                    activeColor: Colors.orange.shade600,
                   ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Severe'),
-                      subtitle: const Text('7-10/10'),
-                      value: 'severe',
-                      groupValue: _selectedSeverity,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedSeverity = value!;
-                        });
-                        _updateData();
-                      },
-                      activeColor: Colors.red.shade600,
-                    ),
+                  RadioListTile<String>(
+                    title: const Text('Severe'),
+                    subtitle: const Text('7-10/10'),
+                    value: 'severe',
+                    groupValue: _selectedSeverity,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSeverity = value!;
+                      });
+                      _updateData();
+                    },
+                    activeColor: Colors.red.shade600,
                   ),
                 ],
               ),
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Emergency warning
         if (_selectedSeverity == 'severe') ...[
           Container(
@@ -334,13 +363,12 @@ class _WebTriageFormState extends State<WebTriageForm> {
   }
 
   bool _canProceed() {
-    return _selectedSymptoms.isNotEmpty || 
-           _symptomsController.text.isNotEmpty;
+    return _selectedSymptoms.isNotEmpty || _symptomsController.text.isNotEmpty;
   }
 
   void _updateData() {
     final severityScore = _getSeverityScore();
-    
+
     widget.onDataChanged({
       'symptoms': _symptomsController.text,
       'selectedSymptoms': _selectedSymptoms,

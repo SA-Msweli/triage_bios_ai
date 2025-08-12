@@ -160,8 +160,9 @@ class MedicalAlgorithmService {
     // Heart rate scoring
     if (vitals.heartRate != null) {
       final hr = vitals.heartRate!;
-      if (hr > 130) score += 3;
-      else if (hr > 110) score += 2;
+      if (hr > 130) {
+        score += 3;
+      } else if (hr > 110) score += 2;
       else if (hr > 100) score += 1;
       else if (hr < 40) score += 3;
       else if (hr < 50) score += 2;
@@ -170,8 +171,9 @@ class MedicalAlgorithmService {
     // Respiratory rate scoring
     if (vitals.respiratoryRate != null) {
       final rr = vitals.respiratoryRate!;
-      if (rr > 30) score += 3;
-      else if (rr > 25) score += 2;
+      if (rr > 30) {
+        score += 3;
+      } else if (rr > 25) score += 2;
       else if (rr > 20) score += 1;
       else if (rr < 8) score += 3;
     }
@@ -179,8 +181,9 @@ class MedicalAlgorithmService {
     // Temperature scoring
     if (vitals.temperature != null) {
       final temp = vitals.temperature!;
-      if (temp > 102.2) score += 2;
-      else if (temp < 95.0) score += 2;
+      if (temp > 102.2) {
+        score += 2;
+      } else if (temp < 95.0) score += 2;
     }
 
     // Blood pressure scoring (systolic)
@@ -188,8 +191,9 @@ class MedicalAlgorithmService {
       final bp = _parseBloodPressure(vitals.bloodPressure!);
       if (bp != null) {
         final systolic = bp['systolic']!;
-        if (systolic > 200) score += 3;
-        else if (systolic > 180) score += 2;
+        if (systolic > 200) {
+          score += 3;
+        } else if (systolic > 180) score += 2;
         else if (systolic < 80) score += 3;
         else if (systolic < 90) score += 2;
       }
@@ -198,8 +202,9 @@ class MedicalAlgorithmService {
     // Oxygen saturation scoring
     if (vitals.oxygenSaturation != null) {
       final spo2 = vitals.oxygenSaturation!;
-      if (spo2 < 90) score += 3;
-      else if (spo2 < 95) score += 2;
+      if (spo2 < 90) {
+        score += 3;
+      } else if (spo2 < 95) score += 2;
       else if (spo2 < 98) score += 1;
     }
 
@@ -252,16 +257,18 @@ class MedicalAlgorithmService {
     // Heart rate analysis
     if (vitals.heartRate != null) {
       final hr = vitals.heartRate!;
-      if (hr > 150 || hr < 40) risk += 3.0;
-      else if (hr > 120 || hr < 50) risk += 2.0;
+      if (hr > 150 || hr < 40) {
+        risk += 3.0;
+      } else if (hr > 120 || hr < 50) risk += 2.0;
       else if (hr > 100 || hr < 60) risk += 1.0;
     }
 
     // Oxygen saturation analysis
     if (vitals.oxygenSaturation != null) {
       final spo2 = vitals.oxygenSaturation!;
-      if (spo2 < 88) risk += 4.0;
-      else if (spo2 < 92) risk += 3.0;
+      if (spo2 < 88) {
+        risk += 4.0;
+      } else if (spo2 < 92) risk += 3.0;
       else if (spo2 < 95) risk += 2.0;
       else if (spo2 < 98) risk += 1.0;
     }
@@ -269,8 +276,9 @@ class MedicalAlgorithmService {
     // Temperature analysis
     if (vitals.temperature != null) {
       final temp = vitals.temperature!;
-      if (temp > 104.0 || temp < 95.0) risk += 3.0;
-      else if (temp > 102.0 || temp < 96.0) risk += 2.0;
+      if (temp > 104.0 || temp < 95.0) {
+        risk += 3.0;
+      } else if (temp > 102.0 || temp < 96.0) risk += 2.0;
       else if (temp > 100.4) risk += 1.0;
     }
 
@@ -281,12 +289,14 @@ class MedicalAlgorithmService {
         final systolic = bp['systolic']!;
         final diastolic = bp['diastolic']!;
         
-        if (systolic > 200 || systolic < 70) risk += 3.0;
-        else if (systolic > 180 || systolic < 90) risk += 2.0;
+        if (systolic > 200 || systolic < 70) {
+          risk += 3.0;
+        } else if (systolic > 180 || systolic < 90) risk += 2.0;
         else if (systolic > 160) risk += 1.0;
         
-        if (diastolic > 120 || diastolic < 40) risk += 2.0;
-        else if (diastolic > 100) risk += 1.0;
+        if (diastolic > 120 || diastolic < 40) {
+          risk += 2.0;
+        } else if (diastolic > 100) risk += 1.0;
       }
     }
 
@@ -336,8 +346,9 @@ class MedicalAlgorithmService {
     }
 
     // Apply MEWS boost for deterioration risk
-    if (mewsScore >= 5) combinedScore += 1.5; // High MEWS adds urgency
-    else if (mewsScore >= 3) combinedScore += 1.0;
+    if (mewsScore >= 5) {
+      combinedScore += 1.5; // High MEWS adds urgency
+    } else if (mewsScore >= 3) combinedScore += 1.0;
 
     return combinedScore.clamp(0.0, 10.0);
   }
@@ -399,7 +410,7 @@ class MedicalAlgorithmService {
       reasoning.add('Clinical trends suggest risk of deterioration requiring close monitoring');
     }
 
-    return reasoning.join('. ') + '.';
+    return '${reasoning.join('. ')}.';
   }
 
   /// Identify specific risk factors

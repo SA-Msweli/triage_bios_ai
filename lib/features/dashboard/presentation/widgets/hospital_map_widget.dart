@@ -1,47 +1,56 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/services/fhir_service.dart';
 
-/// Web-optimized hospital map display widget
-class WebHospitalMap extends StatefulWidget {
+/// Responsive hospital map display widget
+class HospitalMapWidget extends StatefulWidget {
   final List<HospitalCapacity> hospitals;
   final HospitalCapacity? selectedHospital;
 
-  const WebHospitalMap({
+  const HospitalMapWidget({
     super.key,
     required this.hospitals,
     this.selectedHospital,
   });
 
   @override
-  State<WebHospitalMap> createState() => _WebHospitalMapState();
+  State<HospitalMapWidget> createState() => _HospitalMapWidgetState();
 }
 
-class _WebHospitalMapState extends State<WebHospitalMap> {
+class _HospitalMapWidgetState extends State<HospitalMapWidget> {
   HospitalCapacity? _hoveredHospital;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Stack(
-          children: [
-            // Map background (simulated)
-            _buildMapBackground(),
-            
-            // Hospital markers
-            ...widget.hospitals.map((hospital) => _buildHospitalMarker(hospital)),
-            
-            // Hospital info overlay
-            if (_hoveredHospital != null)
-              _buildHospitalInfoOverlay(_hoveredHospital!),
-          ],
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 600;
+
+        return Container(
+          height: isWideScreen ? 400 : 300,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              children: [
+                // Map background (simulated)
+                _buildMapBackground(),
+
+                // Hospital markers
+                ...widget.hospitals.map(
+                  (hospital) => _buildHospitalMarker(hospital),
+                ),
+
+                // Hospital info overlay
+                if (_hoveredHospital != null)
+                  _buildHospitalInfoOverlay(_hoveredHospital!, isWideScreen),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -60,20 +69,18 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
           ],
         ),
       ),
-      child: CustomPaint(
-        painter: MapGridPainter(),
-      ),
+      child: CustomPaint(painter: MapGridPainter()),
     );
   }
 
   Widget _buildHospitalMarker(HospitalCapacity hospital) {
     final isSelected = widget.selectedHospital?.id == hospital.id;
     final isHovered = _hoveredHospital?.id == hospital.id;
-    
+
     // Calculate position based on lat/lng (simplified)
     final left = _latLngToPixel(hospital.longitude, isLongitude: true);
     final top = _latLngToPixel(hospital.latitude, isLongitude: false);
-    
+
     return Positioned(
       left: left,
       top: top,
@@ -95,7 +102,7 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: isSelected || isHovered ? 8 : 4,
                   offset: const Offset(0, 2),
                 ),
@@ -112,19 +119,22 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
     );
   }
 
-  Widget _buildHospitalInfoOverlay(HospitalCapacity hospital) {
+  Widget _buildHospitalInfoOverlay(
+    HospitalCapacity hospital,
+    bool isWideScreen,
+  ) {
     return Positioned(
       top: 16,
       left: 16,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 250),
+        constraints: BoxConstraints(maxWidth: isWideScreen ? 250 : 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -136,71 +146,60 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
           children: [
             Text(
               hospital.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            
+
             Row(
               children: [
                 Icon(Icons.bed, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 4),
                 Text(
                   '${hospital.availableBeds}/${hospital.totalBeds} beds',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 4),
-            
+
             Row(
               children: [
                 Icon(Icons.emergency, size: 16, color: Colors.red.shade600),
                 const SizedBox(width: 4),
                 Text(
                   '${hospital.emergencyBeds} emergency',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
-            
+
             if (hospital.distanceKm != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.blue.shade600),
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Colors.blue.shade600,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${hospital.distanceKm!.toStringAsFixed(1)} km away',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ],
-            
+
             const SizedBox(height: 8),
-            
+
             // Capacity indicator
             Row(
               children: [
                 Text(
                   'Capacity: ',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 Expanded(
                   child: LinearProgressIndicator(
@@ -232,7 +231,7 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
     if (widget.selectedHospital?.id == hospital.id) {
       return Colors.blue.shade600;
     }
-    
+
     final occupancyRate = hospital.occupancyRate;
     if (occupancyRate > 0.9) {
       return Colors.red.shade600;
@@ -279,8 +278,14 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
             _buildDetailRow('Emergency Beds', '${hospital.emergencyBeds}'),
             _buildDetailRow('ICU Beds', '${hospital.icuBeds}'),
             if (hospital.distanceKm != null)
-              _buildDetailRow('Distance', '${hospital.distanceKm!.toStringAsFixed(1)} km'),
-            _buildDetailRow('Occupancy Rate', '${(hospital.occupancyRate * 100).toStringAsFixed(1)}%'),
+              _buildDetailRow(
+                'Distance',
+                '${hospital.distanceKm!.toStringAsFixed(1)} km',
+              ),
+            _buildDetailRow(
+              'Occupancy Rate',
+              '${(hospital.occupancyRate * 100).toStringAsFixed(1)}%',
+            ),
             _buildDetailRow('Last Updated', _formatTime(hospital.lastUpdated)),
           ],
         ),
@@ -310,7 +315,7 @@ class _WebHospitalMapState extends State<WebHospitalMap> {
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
@@ -328,7 +333,7 @@ class MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = Colors.grey.withValues(alpha: 0.2)
       ..strokeWidth = 1;
 
     // Draw grid lines
@@ -350,7 +355,7 @@ class MapGridPainter extends CustomPainter {
 
     // Draw some "roads" for visual appeal
     final roadPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.4)
+      ..color = Colors.grey.withValues(alpha: 0.4)
       ..strokeWidth = 3;
 
     // Horizontal "roads"

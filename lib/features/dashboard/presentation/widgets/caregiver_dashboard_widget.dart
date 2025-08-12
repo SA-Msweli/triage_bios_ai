@@ -15,10 +15,10 @@ class CaregiverDashboardWidget extends StatelessWidget {
         children: [
           // Welcome header
           Text(
-            'Caregiver Dashboard',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            'Welcome, ${user.name.split(' ').first}!',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             'Monitor and care for your patients',
@@ -80,7 +80,7 @@ class CaregiverDashboardWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildPatientItem(
                     context,
                     'John Smith',

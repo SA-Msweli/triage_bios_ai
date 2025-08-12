@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Web-optimized consent management panel
-class WebConsentPanel extends StatefulWidget {
+/// Responsive consent management panel widget
+class ConsentPanelWidget extends StatefulWidget {
   final String patientId;
   final String hospitalId;
   final String hospitalName;
   final Function(bool) onConsentDecision;
 
-  const WebConsentPanel({
+  const ConsentPanelWidget({
     super.key,
     required this.patientId,
     required this.hospitalId,
@@ -16,10 +16,10 @@ class WebConsentPanel extends StatefulWidget {
   });
 
   @override
-  State<WebConsentPanel> createState() => _WebConsentPanelState();
+  State<ConsentPanelWidget> createState() => _ConsentPanelWidgetState();
 }
 
-class _WebConsentPanelState extends State<WebConsentPanel> {
+class _ConsentPanelWidgetState extends State<ConsentPanelWidget> {
   bool? _consentGranted;
   final List<String> _selectedDataTypes = [];
   bool _isProcessing = false;
@@ -28,7 +28,8 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
     {
       'key': 'vitals',
       'title': 'Vital Signs',
-      'description': 'Heart rate, blood pressure, temperature, oxygen saturation',
+      'description':
+          'Heart rate, blood pressure, temperature, oxygen saturation',
       'icon': Icons.favorite,
       'required': true,
     },
@@ -60,49 +61,82 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
     super.initState();
     // Pre-select required data types
     _selectedDataTypes.addAll(
-      _dataTypes.where((dt) => dt['required'] == true).map((dt) => dt['key'] as String),
+      _dataTypes
+          .where((dt) => dt['required'] == true)
+          .map((dt) => dt['key'] as String),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Data Sharing Consent',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 800;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Data Sharing Consent',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose what information to share with ${widget.hospitalName} for your care.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 32),
+
+              if (isWideScreen) ...[
+                // Wide screen layout
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          _buildHospitalInfo(),
+                          const SizedBox(height: 24),
+                          _buildDataSharingOptions(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _buildPrivacyInfo(),
+                          const SizedBox(height: 24),
+                          _buildConsentDecision(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Narrow screen layout
+                _buildHospitalInfo(),
+                const SizedBox(height: 24),
+                _buildDataSharingOptions(),
+                const SizedBox(height: 24),
+                _buildPrivacyInfo(),
+                const SizedBox(height: 24),
+                _buildConsentDecision(),
+              ],
+
+              const SizedBox(height: 32),
+              _buildActionButtons(),
+            ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose what information to share with ${widget.hospitalName} for your care.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 32),
-
-        // Hospital information
-        _buildHospitalInfo(),
-        const SizedBox(height: 24),
-
-        // Data sharing options
-        _buildDataSharingOptions(),
-        const SizedBox(height: 24),
-
-        // Privacy information
-        _buildPrivacyInfo(),
-        const SizedBox(height: 32),
-
-        // Consent decision
-        _buildConsentDecision(),
-        const SizedBox(height: 32),
-
-        // Action buttons
-        _buildActionButtons(),
-      ],
+        );
+      },
     );
   }
 
@@ -161,12 +195,12 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
           children: [
             Text(
               'Data to Share',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             ..._dataTypes.map((dataType) => _buildDataTypeOption(dataType)),
           ],
         ),
@@ -190,15 +224,17 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
         ),
         child: CheckboxListTile(
           value: isSelected,
-          onChanged: isRequired ? null : (value) {
-            setState(() {
-              if (value == true) {
-                _selectedDataTypes.add(dataType['key']);
-              } else {
-                _selectedDataTypes.remove(dataType['key']);
-              }
-            });
-          },
+          onChanged: isRequired
+              ? null
+              : (value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedDataTypes.add(dataType['key']);
+                    } else {
+                      _selectedDataTypes.remove(dataType['key']);
+                    }
+                  });
+                },
           title: Row(
             children: [
               Icon(
@@ -207,17 +243,22 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                dataType['title'] as String,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.blue.shade700 : null,
+              Expanded(
+                child: Text(
+                  dataType['title'] as String,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.blue.shade700 : null,
+                  ),
                 ),
               ),
               if (isRequired) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.shade100,
                     borderRadius: BorderRadius.circular(4),
@@ -238,10 +279,7 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
             padding: const EdgeInsets.only(left: 28, top: 4),
             child: Text(
               dataType['description'] as String,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ),
           activeColor: Colors.blue.shade600,
@@ -276,7 +314,7 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           const Text(
             '• Your consent is recorded securely on blockchain',
             style: TextStyle(fontSize: 12),
@@ -315,15 +353,17 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
           children: [
             Text(
               'Your Decision',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             RadioListTile<bool>(
               title: const Text('Grant Consent'),
-              subtitle: const Text('Share selected data with the hospital for better care'),
+              subtitle: const Text(
+                'Share selected data with the hospital for better care',
+              ),
               value: true,
               groupValue: _consentGranted,
               onChanged: (value) {
@@ -333,10 +373,12 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
               },
               activeColor: Colors.green.shade600,
             ),
-            
+
             RadioListTile<bool>(
               title: const Text('Deny Consent'),
-              subtitle: const Text('Do not share data (you can still receive care)'),
+              subtitle: const Text(
+                'Do not share data (you can still receive care)',
+              ),
               value: false,
               groupValue: _consentGranted,
               onChanged: (value) {
@@ -346,7 +388,7 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
               },
               activeColor: Colors.red.shade600,
             ),
-            
+
             if (_consentGranted == false) ...[
               const SizedBox(height: 12),
               Container(
@@ -358,7 +400,11 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -402,7 +448,9 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
           label: Text(_isProcessing ? 'Processing...' : 'Complete Triage'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            backgroundColor: _consentGranted == true ? Colors.green.shade600 : null,
+            backgroundColor: _consentGranted == true
+                ? Colors.green.shade600
+                : null,
           ),
         ),
       ],
@@ -456,11 +504,7 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(
-              Icons.check_circle,
-              color: Colors.green.shade600,
-              size: 28,
-            ),
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
             const SizedBox(width: 12),
             const Text('Triage Complete'),
           ],
@@ -492,9 +536,18 @@ class _WebConsentPanelState extends State<WebConsentPanel> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('• Proceed to ${widget.hospitalName}', style: const TextStyle(fontSize: 12)),
-                  const Text('• Present this triage summary at reception', style: TextStyle(fontSize: 12)),
-                  const Text('• Your priority level has been communicated', style: TextStyle(fontSize: 12)),
+                  Text(
+                    '• Proceed to ${widget.hospitalName}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const Text(
+                    '• Present this triage summary at reception',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const Text(
+                    '• Your priority level has been communicated',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ],
               ),
             ),

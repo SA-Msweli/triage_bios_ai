@@ -7,24 +7,34 @@ part 'patient_vitals.g.dart';
 class PatientVitals extends Equatable {
   final int? heartRate;
   final String? bloodPressure;
+  final int? bloodPressureSystolic;
+  final int? bloodPressureDiastolic;
   final double? temperature;
   final double? oxygenSaturation;
   final int? respiratoryRate;
   final double? heartRateVariability;
   final DateTime timestamp;
   final String? deviceSource;
+  final String? deviceId;
+  final String? source;
   final double? dataQuality;
+  final double? accuracy;
 
   const PatientVitals({
     this.heartRate,
     this.bloodPressure,
+    this.bloodPressureSystolic,
+    this.bloodPressureDiastolic,
     this.temperature,
     this.oxygenSaturation,
     this.respiratoryRate,
     this.heartRateVariability,
     required this.timestamp,
     this.deviceSource,
+    this.deviceId,
+    this.source,
     this.dataQuality,
+    this.accuracy,
   });
 
   bool get hasCriticalVitals {
@@ -122,12 +132,17 @@ class PatientVitals extends Equatable {
   List<Object?> get props => [
     heartRate,
     bloodPressure,
+    bloodPressureSystolic,
+    bloodPressureDiastolic,
     temperature,
     oxygenSaturation,
     respiratoryRate,
     heartRateVariability,
     timestamp,
     deviceSource,
+    deviceId,
+    source,
     dataQuality,
+    accuracy,
   ];
 }

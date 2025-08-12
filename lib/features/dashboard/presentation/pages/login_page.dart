@@ -76,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Web Portal',
+                          'Login',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -314,7 +314,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/portal');
+        Navigator.of(context).pushReplacementNamed('/dashboard');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -350,7 +350,7 @@ class _LoginPageState extends State<LoginPage> {
       final result = await _authService.loginAsGuest();
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/portal');
+        Navigator.of(context).pushReplacementNamed('/dashboard');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
