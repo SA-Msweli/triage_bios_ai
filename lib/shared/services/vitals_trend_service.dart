@@ -265,8 +265,9 @@ class VitalsTrendService {
     // Check blood pressure stability
     final bpTrend = _analyzeBloodPressureTrend(history);
     if (bpTrend.systolicTrend != TrendDirection.stable ||
-        bpTrend.diastolicTrend != TrendDirection.stable)
+        bpTrend.diastolicTrend != TrendDirection.stable) {
       unstableCount++;
+    }
     totalTrends++;
 
     final instabilityRatio = unstableCount / totalTrends;

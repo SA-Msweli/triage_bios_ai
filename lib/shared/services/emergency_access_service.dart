@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'auth_service.dart';
 
 class EmergencyAccessService {
   static final EmergencyAccessService _instance =

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'auth_service.dart';
 
 class AuditLoggingService {
   static final AuditLoggingService _instance = AuditLoggingService._internal();
@@ -185,8 +184,9 @@ class AuditLoggingService {
         if (userId != null && log.userId != userId) return false;
         if (patientId != null && log.patientId != patientId) return false;
         if (category != null && log.category != category) return false;
-        if (startDate != null && log.timestamp.isBefore(startDate))
+        if (startDate != null && log.timestamp.isBefore(startDate)) {
           return false;
+        }
         if (endDate != null && log.timestamp.isAfter(endDate)) return false;
         return true;
       }).toList();

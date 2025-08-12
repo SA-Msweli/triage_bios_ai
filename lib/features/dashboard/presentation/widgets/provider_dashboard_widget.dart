@@ -234,7 +234,7 @@ class _ProviderDashboardWidgetState extends State<ProviderDashboardWidget> {
                               ),
                             ],
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),

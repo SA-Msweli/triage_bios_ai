@@ -57,7 +57,7 @@ class _PatientDashboardWidgetState extends State<PatientDashboardWidget> {
       _trendAnalysis = await _trendService.analyzeTrends(hoursBack: 24);
 
       // Get connected devices status (Milestone 2 requirement)
-      final devices = await _multiPlatformHealth.getConnectedDevices();
+      final devices = _multiPlatformHealth.getConnectedDevices();
       _connectedDevices = devices.map((device) => device.name).toList();
     } catch (e) {
       // Handle error silently for demo
