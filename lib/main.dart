@@ -1,11 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/dashboard/presentation/pages/login_page.dart';
 import 'features/dashboard/presentation/pages/triage_portal_page.dart';
+import 'features/auth/presentation/pages/login_page.dart' as auth_login;
+import 'features/dashboard/presentation/widgets/role_based_dashboard.dart';
+import 'shared/services/auth_service.dart';
+import 'shared/services/firestore_auth_service.dart';
+import 'shared/services/firebase_service.dart';
+import 'shared/middleware/auth_middleware.dart';
+import 'config/app_config.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const TriageBiosApp());
+
+  try {
+    // Initialize configuration system
+    await AppConfig.initialize();
+
+    // Check if Firebase should be used
+    if (AppConfig.instance.useFirebase) {
+      try {
+        // Firebase configuration is handled by AppConfig
+
+        // Initialize Firebase
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+
+        // Initialize Firebase service
+        final firebaseService = FirebaseService();
+        await firebaseService.initialize();
+
+        // Initialize Firestore authentication service
+        final authService = FirestoreAuthService();
+        await authService.initialize();
+
+        // Create demo users in Firestore if needed
+        await authService.createDemoUsersInFirestore();
+
+        print('✅ Firebase/Firestore initialized successfully');
+        runApp(const TriageBiosApp());
+      } catch (firebaseError) {
+        print(
+          '⚠️ Firebase initialization failed, falling back to local auth: $firebaseError',
+        );
+        await _initializeLocalAuth();
+        runApp(const TriageBiosApp());
+      }
+    } else {
+      print('📱 Using local authentication (Firebase disabled in .env)');
+      await _initializeLocalAuth();
+      runApp(const TriageBiosApp());
+    }
+  } catch (e) {
+    print('❌ Critical initialization error: $e');
+    // Last resort: initialize with minimal local auth
+    await _initializeLocalAuth();
+    runApp(const TriageBiosApp());
+  }
+}
+
+Future<void> _initializeLocalAuth() async {
+  final authService = AuthService();
+  await authService.initialize();
+  await authService.createDemoUsers();
 }
 
 class TriageBiosApp extends StatelessWidget {
@@ -34,15 +94,56 @@ class TriageBiosApp extends StatelessWidget {
         '/triage': (context) => const SimpleTriage(),
         '/hospital-dashboard': (context) => const SimpleDashboard(),
         '/dashboard': (context) => const DashboardPage(),
-        '/login': (context) => const LoginPage(),
-        '/triage-portal': (context) => const TriagePortalPage(),
+        '/login': (context) => const auth_login.LoginPage(),
+        '/old-login': (context) => const LoginPage(),
+        '/triage-portal': (context) => AuthGuard(
+          requiredPermission: 'view_triage',
+          child: const TriagePortalPage(),
+        ),
+        '/patient-dashboard': (context) => AuthGuard(
+          requiredRole: 'patient',
+          child: const RoleBasedDashboard(),
+        ),
+        '/provider-dashboard': (context) => AuthGuard(
+          requiredRole: 'healthcareProvider',
+          child: const RoleBasedDashboard(),
+        ),
+        '/caregiver-dashboard': (context) => AuthGuard(
+          requiredRole: 'caregiver',
+          child: const RoleBasedDashboard(),
+        ),
+        '/admin-dashboard': (context) =>
+            AuthGuard(requiredRole: 'admin', child: const RoleBasedDashboard()),
       },
     );
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthenticationStatus();
+  }
+
+  void _checkAuthenticationStatus() {
+    // If user is already authenticated, redirect to appropriate dashboard
+    if (_authService.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final route = AuthMiddleware.getDefaultRoute();
+        Navigator.of(context).pushReplacementNamed(route);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

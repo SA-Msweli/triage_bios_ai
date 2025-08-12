@@ -5,6 +5,7 @@ import '../../../../shared/services/vitals_trend_service.dart';
 import '../../../../shared/services/multi_platform_health_service.dart';
 import '../../../../shared/services/watsonx_service.dart';
 import '../../../../features/triage/domain/entities/patient_vitals.dart';
+import '../../../../features/auth/domain/entities/patient_consent.dart';
 
 class PatientDashboardWidget extends StatefulWidget {
   const PatientDashboardWidget({super.key});
@@ -886,5 +887,308 @@ class _PatientDashboardWidgetState extends State<PatientDashboardWidget> {
         ],
       ),
     );
+  }
+
+  void _showConsentManagement() {
+    final user = _authService.currentUser!;
+    final consents = _authService.getPatientConsents(user.id);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.security, color: Colors.blue.shade600),
+            const SizedBox(width: 8),
+            const Text('Consent Management'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'You have full control over your medical data. Manage which healthcare providers can access your information:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              if (consents.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No active consents. You can grant access to healthcare providers when needed.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...consents.map((consent) => _buildConsentItem(consent)),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _showGrantConsentDialog(),
+                icon: const Icon(Icons.add),
+                label: const Text('Grant New Consent'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConsentItem(PatientConsent consent) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Provider ID: ${consent.providerId}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: consent.isActive && !consent.isExpired
+                      ? Colors.green.shade100
+                      : Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  consent.isActive && !consent.isExpired ? 'Active' : 'Expired',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: consent.isActive && !consent.isExpired
+                        ? Colors.green.shade800
+                        : Colors.red.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Data Access: ${consent.dataScopes.join(', ')}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          Text(
+            'Granted: ${consent.grantedAt.toString().split(' ')[0]}',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          if (consent.expiresAt != null)
+            Text(
+              'Expires: ${consent.expiresAt!.toString().split(' ')[0]}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () => _revokeConsent(consent.consentId),
+                icon: const Icon(Icons.cancel, size: 16),
+                label: const Text('Revoke'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGrantConsentDialog() {
+    final providerController = TextEditingController();
+    final selectedScopes = <String>{'vitals', 'assessments'};
+    DateTime? expiryDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Grant Healthcare Provider Access'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: providerController,
+                decoration: const InputDecoration(
+                  labelText: 'Provider Email or ID',
+                  hintText: 'doctor@hospital.com',
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Data Access Permissions:'),
+              const SizedBox(height: 8),
+              ...[
+                'vitals',
+                'assessments',
+                'history',
+                'imaging',
+                'triage_results',
+              ].map(
+                (scope) => CheckboxListTile(
+                  title: Text(scope.replaceAll('_', ' ').toUpperCase()),
+                  value: selectedScopes.contains(scope),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        selectedScopes.add(scope);
+                      } else {
+                        selectedScopes.remove(scope);
+                      }
+                    });
+                  },
+                  dense: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('Expiry Date (optional): '),
+                  TextButton(
+                    onPressed: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 30),
+                        ),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() {
+                          expiryDate = date;
+                        });
+                      }
+                    },
+                    child: Text(
+                      expiryDate?.toString().split(' ')[0] ?? 'Select Date',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (providerController.text.isNotEmpty &&
+                    selectedScopes.isNotEmpty) {
+                  await _grantConsent(
+                    providerController.text,
+                    selectedScopes.toList(),
+                    expiryDate,
+                  );
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    _showConsentManagement(); // Refresh the consent list
+                  }
+                }
+              },
+              child: const Text('Grant Access'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _grantConsent(
+    String providerId,
+    List<String> dataScopes,
+    DateTime? expiryDate,
+  ) async {
+    final user = _authService.currentUser!;
+    try {
+      await _authService.grantPatientConsent(
+        user.id,
+        providerId,
+        dataScopes,
+        expiryDate,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Access granted to $providerId'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to grant consent: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _revokeConsent(String consentId) async {
+    final user = _authService.currentUser!;
+    try {
+      await _authService.revokePatientConsent(user.id, consentId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Consent revoked successfully'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).pop(); // Close the dialog
+        _showConsentManagement(); // Reopen with updated data
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to revoke consent: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
