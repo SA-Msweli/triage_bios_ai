@@ -3,8 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/dashboard/presentation/pages/login_page.dart';
 import 'features/dashboard/presentation/pages/triage_portal_page.dart';
+import 'features/triage/presentation/pages/enhanced_triage_page.dart';
+import 'features/hospital_routing/presentation/pages/hospital_finder_page.dart';
+import 'features/hospital_dashboard/presentation/pages/hospital_dashboard_page.dart';
 import 'features/auth/presentation/pages/login_page.dart' as auth_login;
-import 'features/dashboard/presentation/widgets/role_based_dashboard.dart';
+import 'features/auth/presentation/pages/register_page.dart';
+import 'features/auth/presentation/pages/password_reset_page.dart';
+import 'features/auth/presentation/pages/profile_page.dart';
+import 'features/auth/presentation/pages/session_management_page.dart';
+import 'features/dashboard/presentation/widgets/dashboard_router.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/firestore_auth_service.dart';
 import 'shared/services/firebase_service.dart';
@@ -91,29 +98,44 @@ class TriageBiosApp extends StatelessWidget {
       ),
       home: const HomePage(),
       routes: {
-        '/triage': (context) => const SimpleTriage(),
-        '/hospital-dashboard': (context) => const SimpleDashboard(),
-        '/dashboard': (context) => const DashboardPage(),
+        // Authentication routes
         '/login': (context) => const auth_login.LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/password-reset': (context) => const PasswordResetPage(),
+        '/profile': (context) => AuthGuard(child: const ProfilePage()),
+        '/sessions': (context) =>
+            AuthGuard(child: const SessionManagementPage()),
+
+        // Legacy routes (kept for compatibility)
         '/old-login': (context) => const LoginPage(),
+        '/dashboard': (context) => const DashboardPage(),
+
+        // Triage routes (consolidated)
+        '/triage': (context) => AuthGuard(child: const EnhancedTriagePage()),
+        '/enhanced-triage': (context) =>
+            AuthGuard(child: const EnhancedTriagePage()),
         '/triage-portal': (context) => AuthGuard(
           requiredPermission: 'view_triage',
           child: const TriagePortalPage(),
         ),
-        '/patient-dashboard': (context) => AuthGuard(
-          requiredRole: 'patient',
-          child: const RoleBasedDashboard(),
-        ),
+
+        // Hospital routes
+        '/hospitals': (context) => AuthGuard(child: const HospitalFinderPage()),
+        '/hospital-dashboard': (context) => const HospitalDashboard(),
+
+        // Role-based dashboard routes
+        '/patient-dashboard': (context) =>
+            AuthGuard(requiredRole: 'patient', child: const DashboardRouter()),
         '/provider-dashboard': (context) => AuthGuard(
           requiredRole: 'healthcareProvider',
-          child: const RoleBasedDashboard(),
+          child: const DashboardRouter(),
         ),
         '/caregiver-dashboard': (context) => AuthGuard(
           requiredRole: 'caregiver',
-          child: const RoleBasedDashboard(),
+          child: const DashboardRouter(),
         ),
         '/admin-dashboard': (context) =>
-            AuthGuard(requiredRole: 'admin', child: const RoleBasedDashboard()),
+            AuthGuard(requiredRole: 'admin', child: const DashboardRouter()),
       },
     );
   }
@@ -203,16 +225,15 @@ class _HomePageState extends State<HomePage> {
                         'Start AI-powered symptom assessment',
                         Icons.assignment_ind,
                         Colors.blue,
-                        () => Navigator.pushNamed(context, '/triage-portal'),
+                        () => Navigator.pushNamed(context, '/enhanced-triage'),
                       ),
                       _buildFeatureCard(
                         context,
-                        'Hospital Dashboard',
-                        'View patient queue and capacity',
-                        Icons.dashboard,
+                        'Find Hospitals',
+                        'Locate nearby emergency facilities',
+                        Icons.local_hospital,
                         Colors.green,
-                        () =>
-                            Navigator.pushNamed(context, '/hospital-dashboard'),
+                        () => Navigator.pushNamed(context, '/hospitals'),
                       ),
                       _buildFeatureCard(
                         context,
@@ -328,83 +349,6 @@ class _HomePageState extends State<HomePage> {
             child: const Text('OK'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Simple placeholder pages
-class SimpleTriage extends StatelessWidget {
-  const SimpleTriage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('AI Triage Assessment'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.assignment_ind, size: 64, color: Colors.blue),
-            SizedBox(height: 16),
-            Text(
-              'AI Triage Engine',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'AI-Powered Triage Engine (Milestone 1 & 2):\n'
-              '• WatsonX.ai symptom analysis with Granite model\n'
-              '• Multi-platform wearable integration (8+ devices)\n'
-              '• Medical algorithm service (ESI, MEWS)\n'
-              '• Vitals trend analysis and deterioration detection\n'
-              '• Multimodal input (voice, images, text)\n'
-              '• Explainable AI reasoning',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SimpleDashboard extends StatelessWidget {
-  const SimpleDashboard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hospital Dashboard'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.dashboard, size: 64, color: Colors.green),
-            SizedBox(height: 16),
-            Text(
-              'Hospital Dashboard',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Hospital Dashboard (Milestone 1 & 2):\n'
-              '• Real-time FHIR R4 API integration\n'
-              '• AI-enhanced patient queue with reasoning\n'
-              '• WatsonX.ai hospital routing optimization\n'
-              '• Multi-platform vitals monitoring\n'
-              '• Capacity prediction and surge detection\n'
-              '• Clinical decision support algorithms',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

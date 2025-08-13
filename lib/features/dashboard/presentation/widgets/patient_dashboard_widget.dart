@@ -6,6 +6,7 @@ import '../../../../shared/services/multi_platform_health_service.dart';
 import '../../../../shared/services/watsonx_service.dart';
 import '../../../../features/triage/domain/entities/patient_vitals.dart';
 import '../../../../features/auth/domain/entities/patient_consent.dart';
+import '../../../../config/app_config.dart';
 
 class PatientDashboardWidget extends StatefulWidget {
   const PatientDashboardWidget({super.key});
@@ -39,14 +40,20 @@ class _PatientDashboardWidgetState extends State<PatientDashboardWidget> {
     });
 
     try {
-      // Initialize WatsonX service for health insights (Milestone 1 & 2 requirement)
+      // Initialize health services
+      await _healthService.initialize();
       _watsonxService.initialize(
-        apiKey: 'demo_api_key',
-        projectId: 'demo_project_id',
+        apiKey: AppConfig.instance.watsonxApiKey,
+        projectId: AppConfig.instance.watsonxProjectId,
       );
 
-      // Load latest vitals from multiple platforms (Milestone 2 requirement)
+      // Load latest vitals from multiple sources (Milestone 2 requirement)
       _latestVitals = await _multiPlatformHealth.getLatestVitals();
+
+      // If no vitals from multi-platform, try native health service as fallback
+      if (_latestVitals == null) {
+        _latestVitals = await _healthService.getLatestVitals();
+      }
 
       // Store vitals for trend analysis
       if (_latestVitals != null) {

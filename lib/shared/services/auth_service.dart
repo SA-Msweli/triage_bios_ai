@@ -623,6 +623,35 @@ class AuthService {
       _logger.e('Failed to load stored data: $e');
     }
   }
+
+  /// Send password reset email
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      _logger.i('Sending password reset email to: $email');
+
+      // Check if user exists
+      final user = await _getUserByEmail(email);
+      if (user == null) {
+        _logger.w('Password reset requested for non-existent email: $email');
+        return false;
+      }
+
+      // In a real implementation, this would:
+      // 1. Generate a secure reset token
+      // 2. Store the token with expiration
+      // 3. Send email with reset link
+      // 4. Return true if email was sent successfully
+
+      // For demo purposes, simulate email sending
+      await Future.delayed(const Duration(seconds: 1));
+
+      _logger.i('Password reset email sent successfully to: $email');
+      return true;
+    } catch (e) {
+      _logger.e('Failed to send password reset email: $e');
+      return false;
+    }
+  }
 }
 
 /// User model

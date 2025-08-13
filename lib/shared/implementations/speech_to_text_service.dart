@@ -47,7 +47,7 @@ class SpeechToTextService implements SpeechInterface {
 
   @override
   Future<bool> get isAvailable async {
-    return false; // Speech-to-text service disabled - dependency removed
+    return _isInitialized; // Speech-to-text service disabled - dependency removed
   }
 
   @override

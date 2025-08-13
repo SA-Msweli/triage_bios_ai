@@ -21,7 +21,8 @@ class HospitalMapWidget extends StatefulWidget {
 
 class _HospitalMapWidgetState extends State<HospitalMapWidget> {
   final Logger _logger = Logger();
-  GoogleMapController? _mapController; // Used in onMapCreated callback for future map operations
+  GoogleMapController?
+  _mapController; // Used in onMapCreated callback for future map operations
   Position? _currentPosition;
   List<Hospital> _hospitals = [];
   Hospital? _selectedHospital;
@@ -194,6 +195,7 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
             ),
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
+              _onMapCreated();
             },
             markers: _buildMarkers(),
             myLocationEnabled: true,
@@ -427,5 +429,34 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
         action: SnackBarAction(label: 'OK', onPressed: () {}),
       ),
     );
+  }
+
+  /// Called when the map is created and controller is available
+  void _onMapCreated() {
+    _logger.i('Map created and controller initialized');
+
+    // If we have a recommended hospital, animate to it
+    if (_recommendedHospital != null) {
+      _animateToHospital(_recommendedHospital!);
+    }
+  }
+
+  /// Animate map camera to a specific hospital
+  Future<void> _animateToHospital(Hospital hospital) async {
+    if (_mapController == null) return;
+
+    try {
+      await _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(hospital.latitude, hospital.longitude),
+            zoom: 15.0,
+          ),
+        ),
+      );
+      _logger.i('Animated to hospital: ${hospital.name}');
+    } catch (e) {
+      _logger.e('Failed to animate to hospital: $e');
+    }
   }
 }

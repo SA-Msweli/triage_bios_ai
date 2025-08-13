@@ -8,6 +8,7 @@ import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/services/consent_service.dart';
 import '../../../../shared/services/watsonx_service.dart';
 import '../../../../shared/services/medical_algorithm_service.dart';
+import '../../../../config/app_config.dart';
 import '../../../../shared/services/multimodal_input_service.dart';
 import '../../../../shared/services/vitals_trend_service.dart';
 
@@ -52,8 +53,8 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
 
       // Initialize WatsonX AI service for symptom analysis
       _watsonxService.initialize(
-        apiKey: 'demo_api_key', // In production, get from secure config
-        projectId: 'demo_project_id',
+        apiKey: AppConfig.instance.watsonxApiKey,
+        projectId: AppConfig.instance.watsonxProjectId,
       );
 
       // Initialize multimodal input service for voice/image input

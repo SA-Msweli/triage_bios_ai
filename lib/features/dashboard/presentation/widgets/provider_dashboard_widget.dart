@@ -3,6 +3,7 @@ import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/services/fhir_service.dart';
 import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/services/watsonx_service.dart';
+import '../../../../config/app_config.dart';
 
 class ProviderDashboardWidget extends StatefulWidget {
   const ProviderDashboardWidget({super.key});
@@ -35,9 +36,10 @@ class _ProviderDashboardWidgetState extends State<ProviderDashboardWidget> {
     try {
       // Initialize services (Milestone 1 & 2 requirements)
       _fhirService.initialize();
+      await _routingService.initialize();
       _watsonxService.initialize(
-        apiKey: 'demo_api_key',
-        projectId: 'demo_project_id',
+        apiKey: AppConfig.instance.watsonxApiKey,
+        projectId: AppConfig.instance.watsonxProjectId,
       );
 
       // Load real-time hospital capacity (Milestone 2 requirement)
