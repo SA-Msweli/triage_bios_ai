@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/services/fhir_service.dart';
+import '../../../../shared/widgets/constrained_responsive_container.dart';
+import '../../../../shared/utils/responsive_breakpoints.dart';
 
 /// Responsive hospital map display widget
 class HospitalMapWidget extends StatefulWidget {
@@ -21,36 +23,31 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth > 600;
+    return ConstrainedResponsiveContainer.hospitalMap(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            children: [
+              // Map background (simulated)
+              _buildMapBackground(),
 
-        return Container(
-          height: isWideScreen ? 400 : 300,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
+              // Hospital markers
+              ...widget.hospitals.map(
+                (hospital) => _buildHospitalMarker(hospital),
+              ),
+
+              // Hospital info overlay
+              if (_hoveredHospital != null)
+                _buildHospitalInfoOverlay(_hoveredHospital!),
+            ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              children: [
-                // Map background (simulated)
-                _buildMapBackground(),
-
-                // Hospital markers
-                ...widget.hospitals.map(
-                  (hospital) => _buildHospitalMarker(hospital),
-                ),
-
-                // Hospital info overlay
-                if (_hoveredHospital != null)
-                  _buildHospitalInfoOverlay(_hoveredHospital!, isWideScreen),
-              ],
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -119,109 +116,132 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
     );
   }
 
-  Widget _buildHospitalInfoOverlay(
-    HospitalCapacity hospital,
-    bool isWideScreen,
-  ) {
+  Widget _buildHospitalInfoOverlay(HospitalCapacity hospital) {
     return Positioned(
       top: 16,
       left: 16,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: isWideScreen ? 250 : 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              hospital.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                Icon(Icons.bed, size: 16, color: Colors.grey.shade600),
-                const SizedBox(width: 4),
-                Text(
-                  '${hospital.availableBeds}/${hospital.totalBeds} beds',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+      child: ConstrainedResponsiveContainer(
+        minWidth: 200,
+        maxWidth: ResponsiveBreakpoints.isMobile(context) ? 200 : 250,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                hospital.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-              ],
-            ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+              const SizedBox(height: 8),
 
-            const SizedBox(height: 4),
-
-            Row(
-              children: [
-                Icon(Icons.emergency, size: 16, color: Colors.red.shade600),
-                const SizedBox(width: 4),
-                Text(
-                  '${hospital.emergencyBeds} emergency',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-
-            if (hospital.distanceKm != null) ...[
-              const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: Colors.blue.shade600,
-                  ),
+                  Icon(Icons.bed, size: 16, color: Colors.grey.shade600),
                   const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${hospital.availableBeds}/${hospital.totalBeds} beds',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 4),
+
+              Row(
+                children: [
+                  Icon(Icons.emergency, size: 16, color: Colors.red.shade600),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${hospital.emergencyBeds} emergency',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              if (hospital.distanceKm != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.blue.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${hospital.distanceKm!.toStringAsFixed(1)} km away',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 8),
+
+              // Capacity indicator
+              Row(
+                children: [
                   Text(
-                    '${hospital.distanceKm!.toStringAsFixed(1)} km away',
+                    'Capacity: ',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: hospital.occupancyRate,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getCapacityColor(hospital.occupancyRate),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(hospital.occupancyRate * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _getCapacityColor(hospital.occupancyRate),
+                    ),
                   ),
                 ],
               ),
             ],
-
-            const SizedBox(height: 8),
-
-            // Capacity indicator
-            Row(
-              children: [
-                Text(
-                  'Capacity: ',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: hospital.occupancyRate,
-                    backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _getCapacityColor(hospital.occupancyRate),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${(hospital.occupancyRate * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: _getCapacityColor(hospital.occupancyRate),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

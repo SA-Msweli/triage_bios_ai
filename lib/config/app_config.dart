@@ -1,8 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html show window;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js' as js;
 
 /// Centralized application configuration
 /// Loads settings from environment variables with fallback defaults
+/// Supports multiple platforms: mobile, desktop, and web
 class AppConfig {
   static late AppConfig _instance;
   static AppConfig get instance => _instance;
@@ -10,25 +15,193 @@ class AppConfig {
   // Private constructor
   AppConfig._();
 
+  bool _isInitialized = false;
+  bool _dotenvLoaded = false;
+
   /// Initialize the configuration
   static Future<void> initialize() async {
     _instance = AppConfig._();
+    await _instance._initializeConfig();
+  }
 
-    // Load environment variables
+  Future<void> _initializeConfig() async {
+    if (_isInitialized) return;
+
     try {
-      await dotenv.load(fileName: ".env");
+      // Try to load .env file (works on mobile/desktop, fails gracefully on web)
+      if (!kIsWeb) {
+        // Mobile and Desktop: Load from .env file
+        try {
+          await dotenv.load(fileName: ".env");
+          _dotenvLoaded = true;
+          if (kDebugMode) {
+            print('✅ AppConfig: .env file loaded successfully');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print(
+              '⚠️ AppConfig: .env file not found, using fallback values: $e',
+            );
+          }
+        }
+      } else {
+        // Web: Use build-time environment variables or fallbacks
+        if (kDebugMode) {
+          print(
+            '🌐 AppConfig: Web platform detected, using build-time environment variables',
+          );
+        }
+      }
+
+      _isInitialized = true;
+
       if (kDebugMode) {
-        print('AppConfig initialized with environment variables');
+        print('✅ AppConfig initialized successfully');
+        _printConfigSummary();
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Warning: .env file not found, using defaults: $e');
+        print('❌ AppConfig initialization error: $e');
       }
+      _isInitialized = true; // Continue with fallback values
     }
   }
 
+  /// Get environment variable with multiple fallback strategies
   String? _getEnv(String key) {
-    return dotenv.env[key];
+    // Strategy 1: Try dotenv (mobile/desktop)
+    if (_dotenvLoaded && dotenv.env.containsKey(key)) {
+      return dotenv.env[key];
+    }
+
+    // Strategy 2: Try build-time environment variables (web)
+    if (kIsWeb) {
+      // For web builds, environment variables can be injected at build time
+      // This would be configured in your build process
+      return _getWebEnvironmentVariable(key);
+    }
+
+    // Strategy 3: Try system environment variables (fallback)
+    return _getSystemEnvironmentVariable(key);
+  }
+
+  /// Get environment variable for web platform
+  String? _getWebEnvironmentVariable(String key) {
+    if (!kIsWeb) return null;
+
+    try {
+      // Strategy 1: Check JavaScript global variables (injected at build time)
+      // These would be injected by webpack DefinePlugin or similar build tools
+      final jsValue = js.context['env']?[key];
+      if (jsValue != null && jsValue is String && jsValue.isNotEmpty) {
+        return jsValue;
+      }
+
+      // Strategy 2: Check window object for environment variables
+      // Some deployment platforms inject variables into window object
+      final windowEnv = html.window.localStorage['env_$key'];
+      if (windowEnv != null && windowEnv.isNotEmpty) {
+        return windowEnv;
+      }
+
+      // Strategy 3: Check for build-time constants (dart-define values)
+      // These are injected at compile time using --dart-define flags
+      return _getBuildTimeConstant(key);
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Error accessing web environment variable $key: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Get build-time constant (dart-define values)
+  String? _getBuildTimeConstant(String key) {
+    // These constants are injected at build time using --dart-define flags
+    switch (key) {
+      case 'WATSONX_API_KEY':
+        const value = String.fromEnvironment('WATSONX_API_KEY');
+        return value.isNotEmpty ? value : null;
+      case 'WATSONX_PROJECT_ID':
+        const value = String.fromEnvironment('WATSONX_PROJECT_ID');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_PROJECT_ID':
+        const value = String.fromEnvironment('FIREBASE_PROJECT_ID');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_WEB_API_KEY':
+        const value = String.fromEnvironment('FIREBASE_WEB_API_KEY');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_WEB_APP_ID':
+        const value = String.fromEnvironment('FIREBASE_WEB_APP_ID');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_AUTH_DOMAIN':
+        const value = String.fromEnvironment('FIREBASE_AUTH_DOMAIN');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_STORAGE_BUCKET':
+        const value = String.fromEnvironment('FIREBASE_STORAGE_BUCKET');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_MESSAGING_SENDER_ID':
+        const value = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID');
+        return value.isNotEmpty ? value : null;
+      case 'FIREBASE_MEASUREMENT_ID':
+        const value = String.fromEnvironment('FIREBASE_MEASUREMENT_ID');
+        return value.isNotEmpty ? value : null;
+      case 'GOOGLE_MAPS_API_KEY':
+        const value = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+        return value.isNotEmpty ? value : null;
+      default:
+        // For other keys, return null to use fallback values
+        return null;
+    }
+  }
+
+  /// Get system environment variable (fallback)
+  String? _getSystemEnvironmentVariable(String key) {
+    // This is a fallback that typically won't work in Flutter
+    // but provides a hook for future platform-specific implementations
+    return null;
+  }
+
+  /// Print configuration summary for debugging
+  void _printConfigSummary() {
+    if (!kDebugMode) return;
+
+    print('📊 AppConfig Summary:');
+    print('   Platform: ${kIsWeb ? 'Web' : 'Mobile/Desktop'}');
+    print('   .env loaded: $_dotenvLoaded');
+    print(
+      '   Watson API configured: ${watsonxApiKey != 'demo_watsonx_api_key'}',
+    );
+    print(
+      '   Firebase configured: ${firebaseProjectId != 'triage-bios-ai-demo'}',
+    );
+    print('   Environment: $flutterEnv');
+    print('   Debug mode: $debugMode');
+  }
+
+  /// Validate that required environment variables are present
+  List<String> validateRequiredVariables() {
+    final missing = <String>[];
+    final required = [
+      'WATSONX_API_KEY',
+      'WATSONX_PROJECT_ID',
+      'FIREBASE_PROJECT_ID',
+    ];
+
+    for (final key in required) {
+      final value = _getEnv(key);
+      if (value == null || value.isEmpty || value.startsWith('demo_')) {
+        missing.add(key);
+      }
+    }
+
+    return missing;
+  }
+
+  /// Check if the app is running with production configuration
+  bool get hasProductionConfig {
+    return watsonxApiKey != 'demo_watsonx_api_key' &&
+        firebaseProjectId != 'triage-bios-ai-demo';
   }
 
   // =============================================================================

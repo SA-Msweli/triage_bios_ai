@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -72,7 +73,7 @@ class AuthService {
   }) async {
     try {
       // Check if user already exists
-      final existingUser = await _getUserByEmail(email);
+      final existingUser = await getUserByEmailProtected(email);
       if (existingUser != null) {
         return AuthResult.error('User with this email already exists');
       }
@@ -93,11 +94,11 @@ class AuthService {
       );
 
       // Store user in local database
-      await _storeUser(user, password);
+      await storeUserProtected(user, password);
 
       // Set as current user
       currentUserInternal = user;
-      await _saveCurrentUser();
+      await saveCurrentUserProtected();
 
       _logger.i(
         'User registered successfully: ${user.name} (${user.role.name})',
@@ -115,7 +116,7 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final user = await _getUserByEmail(email);
+      final user = await getUserByEmailProtected(email);
       if (user == null) {
         return AuthResult.error('User not found');
       }
@@ -125,10 +126,10 @@ class AuthService {
 
       // Update last login
       final updatedUser = user.copyWith(lastLoginAt: DateTime.now());
-      await _updateUser(updatedUser);
+      await updateUserProtected(updatedUser);
 
       currentUserInternal = updatedUser;
-      await _saveCurrentUser();
+      await saveCurrentUserProtected();
 
       _logger.i('User logged in: ${user.name} (${user.role.name})');
       return AuthResult.success(updatedUser);
@@ -153,7 +154,7 @@ class AuthService {
       );
 
       currentUserInternal = guestUser;
-      await _saveCurrentUser();
+      await saveCurrentUserProtected();
 
       _logger.i('Guest login successful');
       return AuthResult.success(guestUser);
@@ -197,9 +198,9 @@ class AuthService {
         medicalId: medicalId ?? currentUserInternal!.medicalId,
       );
 
-      await _updateUser(updatedUser);
+      await updateUserProtected(updatedUser);
       currentUserInternal = updatedUser;
-      await _saveCurrentUser();
+      await saveCurrentUserProtected();
 
       _logger.i('Profile updated for user: ${updatedUser.name}');
       return AuthResult.success(updatedUser);
@@ -209,8 +210,9 @@ class AuthService {
     }
   }
 
-  /// Get user by email
-  Future<User?> _getUserByEmail(String email) async {
+  /// Get user by email (protected for subclasses)
+  @protected
+  Future<User?> getUserByEmailProtected(String email) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final usersJson = prefs.getString(_usersKey);
@@ -229,8 +231,9 @@ class AuthService {
     }
   }
 
-  /// Store user in local database
-  Future<void> _storeUser(User user, String password) async {
+  /// Store user in local database (protected for subclasses)
+  @protected
+  Future<void> storeUserProtected(User user, String password) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final usersJson = prefs.getString(_usersKey) ?? '{}';
@@ -249,8 +252,9 @@ class AuthService {
     }
   }
 
-  /// Update user in local database
-  Future<void> _updateUser(User user) async {
+  /// Update user in local database (protected for subclasses)
+  @protected
+  Future<void> updateUserProtected(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final usersJson = prefs.getString(_usersKey) ?? '{}';
@@ -266,8 +270,9 @@ class AuthService {
     }
   }
 
-  /// Save current user to preferences
-  Future<void> _saveCurrentUser() async {
+  /// Save current user to preferences (protected for subclasses)
+  @protected
+  Future<void> saveCurrentUserProtected() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (currentUserInternal != null) {
@@ -630,7 +635,7 @@ class AuthService {
       _logger.i('Sending password reset email to: $email');
 
       // Check if user exists
-      final user = await _getUserByEmail(email);
+      final user = await getUserByEmailProtected(email);
       if (user == null) {
         _logger.w('Password reset requested for non-existent email: $email');
         return false;

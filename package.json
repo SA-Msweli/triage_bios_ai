@@ -1,0 +1,14 @@
+{
+  "name": "triage-bios-ai",
+  "version": "1.0.0",
+  "description": "Triage-BIOS.ai - AI-Powered Emergency Triage System",
+  "scripts": {
+    "build": "flutter build web --release",
+    "build:env": "node scripts/build-with-env.js",
+    "deploy": "npm run build:env && firebase deploy --only hosting",
+    "deploy:quick": "flutter build web --release && firebase deploy --only hosting"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

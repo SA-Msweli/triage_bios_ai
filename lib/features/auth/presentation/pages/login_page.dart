@@ -42,10 +42,9 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (result.success && result.user != null) {
-        // Navigate to appropriate dashboard based on role
-        final route = AuthMiddleware.getDefaultRoute();
+        // Navigate to appropriate dashboard based on role with enhanced routing
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed(route);
+          AuthMiddleware.navigatePostLogin(context);
         }
       } else {
         setState(() {

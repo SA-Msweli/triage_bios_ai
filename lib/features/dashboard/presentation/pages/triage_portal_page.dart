@@ -11,6 +11,11 @@ import '../../../../shared/services/medical_algorithm_service.dart';
 import '../../../../config/app_config.dart';
 import '../../../../shared/services/multimodal_input_service.dart';
 import '../../../../shared/services/vitals_trend_service.dart';
+import '../../../../shared/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/responsive_widget.dart';
+import '../../../../shared/widgets/constrained_responsive_container.dart';
+import '../../../../shared/widgets/responsive_grid.dart';
+import '../../../../shared/utils/overflow_detection.dart';
 
 /// Responsive triage portal for patient assessment and hospital routing
 class TriagePortalPage extends StatefulWidget {
@@ -99,58 +104,61 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   }
 
   Widget _buildResponsiveLayout() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-
-        if (screenWidth > 1200) {
-          return _buildDesktopLayout();
-        } else if (screenWidth > 800) {
-          return _buildTabletLayout();
-        } else {
-          return _buildMobileLayout();
-        }
-      },
+    return ResponsiveBuilder(
+      mobile: (context) => _buildMobileLayout(),
+      tablet: (context) => _buildTabletLayout(),
+      desktop: (context) => _buildDesktopLayout(),
     );
   }
 
   Widget _buildDesktopLayout() {
-    return Row(
-      children: [
-        // Left sidebar - Navigation and progress
-        Container(
-          width: 300,
-          color: Colors.blue.shade50,
-          child: _buildSidebar(),
+    return ResponsiveThreeColumnLayout(
+      leftChild: ConstrainedResponsiveContainer(
+        minWidth: 280,
+        maxWidth: 320,
+        child: Container(color: Colors.blue.shade50, child: _buildSidebar()),
+      ),
+      centerChild: ConstrainedResponsiveContainer(
+        child: _buildMainContent().withOverflowDetection(
+          debugName: 'Desktop Main Content',
         ),
-        // Main content area
-        Expanded(flex: 2, child: _buildMainContent()),
-        // Right panel - Hospital map and info
-        Container(
-          width: 400,
-          color: Colors.grey.shade50,
-          child: _buildRightPanel(),
-        ),
-      ],
+      ),
+      rightChild: ConstrainedResponsiveContainer(
+        minWidth: 300,
+        maxWidth: 420,
+        child: Container(color: Colors.grey.shade50, child: _buildRightPanel()),
+      ),
+      leftFlex: 1.0,
+      centerFlex: 2.0,
+      rightFlex: 1.2,
+      spacing: 0,
     );
   }
 
   Widget _buildTabletLayout() {
     return Column(
       children: [
-        // Top navigation
-        Container(
-          height: 80,
-          color: Colors.blue.shade50,
-          child: _buildTopNavigation(),
+        // Top navigation with constraints
+        ConstrainedResponsiveContainer(
+          minHeight: 60,
+          maxHeight: 100,
+          child: Container(
+            color: Colors.blue.shade50,
+            child: _buildTopNavigation(),
+          ),
         ),
-        // Main content
+        // Main content with responsive two-column layout
         Expanded(
-          child: Row(
-            children: [
-              Expanded(flex: 2, child: _buildMainContent()),
-              Expanded(flex: 1, child: _buildRightPanel()),
-            ],
+          child: ResponsiveTwoColumnLayout(
+            leftChild: _buildMainContent().withOverflowDetection(
+              debugName: 'Tablet Main Content',
+            ),
+            rightChild: _buildRightPanel().withOverflowDetection(
+              debugName: 'Tablet Right Panel',
+            ),
+            leftFlex: 2.0,
+            rightFlex: 1.0,
+            spacing: 0,
           ),
         ),
       ],
@@ -158,89 +166,128 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   }
 
   Widget _buildMobileLayout() {
-    return Column(
-      children: [
-        // Mobile header
-        Container(
-          height: 60,
-          color: Colors.blue.shade700,
-          child: _buildMobileHeader(),
-        ),
-        // Progress indicator
-        SizedBox(
-          height: 8,
-          child: LinearProgressIndicator(
-            value: _getProgressValue(),
-            backgroundColor: Colors.grey.shade300,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+    return Scaffold(
+      resizeToAvoidBottomInset: true, // Handle keyboard properly
+      body: Column(
+        children: [
+          // Mobile header with constraints
+          ConstrainedResponsiveContainer(
+            minHeight: 44, // Minimum touch target
+            maxHeight: 80,
+            child: Container(
+              color: Colors.blue.shade700,
+              child: _buildMobileHeader(),
+            ),
           ),
-        ),
-        // Main content
-        Expanded(child: _buildMainContent()),
-      ],
+          // Progress indicator
+          ConstrainedResponsiveContainer(
+            minHeight: 6,
+            maxHeight: 12,
+            child: LinearProgressIndicator(
+              value: _getProgressValue(),
+              backgroundColor: Colors.grey.shade300,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+            ),
+          ),
+          // Main content with overflow protection
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: _buildMainContent().withOverflowDetection(
+                debugName: 'Mobile Main Content',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSidebar() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Logo and title
-          Row(
-            children: [
-              Icon(Icons.local_hospital, color: Colors.blue.shade700, size: 32),
-              const SizedBox(width: 12),
-              Text(
-                'Triage-BIOS.ai',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: ResponsiveBreakpoints.getResponsivePadding(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo and title with text overflow protection
+            ConstrainedResponsiveContainer(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.local_hospital,
+                    color: Colors.blue.shade700,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Triage-BIOS.ai',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 32),
-
-          // Progress steps
-          _buildProgressSteps(),
-
-          const Spacer(),
-
-          // Emergency contact info
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            const SizedBox(height: 32),
+
+            // Progress steps
+            _buildProgressSteps(),
+
+            const SizedBox(height: 32),
+
+            // Emergency contact info with constraints
+            ConstrainedResponsiveContainer.card(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.emergency, color: Colors.red.shade700, size: 20),
-                    const SizedBox(width: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.emergency,
+                          color: Colors.red.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Emergency',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      'Emergency',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade700,
-                      ),
+                      'If this is a life-threatening emergency, call 911 immediately.',
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.visible,
+                      softWrap: true,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'If this is a life-threatening emergency, call 911 immediately.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -371,7 +418,7 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
 
   Widget _buildMainContent() {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveBreakpoints.getResponsivePadding(context),
       child: _buildCurrentStepContent(),
     );
   }
@@ -412,51 +459,62 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   }
 
   Widget _buildRightPanel() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Nearby Hospitals',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Hospital map
-          Expanded(
-            flex: 2,
-            child: HospitalMapWidget(
-              hospitals: _nearbyHospitals,
-              selectedHospital: _routingResult?.recommendedHospital,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Hospital list
-          if (_nearbyHospitals.isNotEmpty) ...[
-            Text(
-              'Hospital Status',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              flex: 1,
-              child: ListView.builder(
-                itemCount: _nearbyHospitals.length,
-                itemBuilder: (context, index) {
-                  final hospital = _nearbyHospitals[index];
-                  return _buildHospitalCard(hospital);
-                },
+    return SingleChildScrollView(
+      child: Padding(
+        padding: ResponsiveBreakpoints.getResponsivePadding(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title with text overflow protection
+            ConstrainedResponsiveContainer(
+              child: Text(
+                'Nearby Hospitals',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Hospital map with size constraints
+            ConstrainedResponsiveContainer.hospitalMap(
+              child: HospitalMapWidget(
+                hospitals: _nearbyHospitals,
+                selectedHospital: _routingResult?.recommendedHospital,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Hospital list
+            if (_nearbyHospitals.isNotEmpty) ...[
+              Text(
+                'Hospital Status',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              const SizedBox(height: 12),
+              ConstrainedResponsiveContainer(
+                maxHeight: 300, // Prevent excessive height
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _nearbyHospitals.length,
+                  itemBuilder: (context, index) {
+                    final hospital = _nearbyHospitals[index];
+                    return _buildHospitalCard(hospital);
+                  },
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -464,40 +522,50 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   Widget _buildHospitalCard(HospitalCapacity hospital) {
     final isRecommended = _routingResult?.recommendedHospital.id == hospital.id;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: isRecommended ? Colors.blue.shade50 : null,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    hospital.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isRecommended ? Colors.blue.shade700 : null,
+    return ConstrainedResponsiveContainer.card(
+      margin: ResponsiveBreakpoints.getResponsiveMargin(
+        context,
+      ).copyWith(top: 0),
+      child: Card(
+        color: isRecommended ? Colors.blue.shade50 : null,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      hospital.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isRecommended ? Colors.blue.shade700 : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
-                ),
-                if (isRecommended)
-                  Icon(Icons.star, color: Colors.blue.shade700, size: 16),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${hospital.availableBeds}/${hospital.totalBeds} beds available',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (hospital.distanceKm != null)
-              Text(
-                '${hospital.distanceKm!.toStringAsFixed(1)} km away',
-                style: Theme.of(context).textTheme.bodySmall,
+                  if (isRecommended)
+                    Icon(Icons.star, color: Colors.blue.shade700, size: 16),
+                ],
               ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                '${hospital.availableBeds}/${hospital.totalBeds} beds available',
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              if (hospital.distanceKm != null)
+                Text(
+                  '${hospital.distanceKm!.toStringAsFixed(1)} km away',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -508,95 +576,111 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Recommended Hospital',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 24),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recommended Hospital',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          const SizedBox(height: 24),
 
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          ConstrainedResponsiveContainer.card(
+            child: Card(
+              child: Padding(
+                padding: ResponsiveBreakpoints.getResponsivePadding(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.local_hospital,
-                      color: Colors.blue.shade700,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _routingResult!.recommendedHospital.name,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.local_hospital,
+                          color: Colors.blue.shade700,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _routingResult!.recommendedHospital.name,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                              Text(
+                                '${_routingResult!.routingMetrics.distanceKm.toStringAsFixed(1)} km away',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${_routingResult!.routingMetrics.distanceKm.toStringAsFixed(1)} km away',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Responsive grid for metrics
+                    ResponsiveGrid(
+                      mobileColumns: 1,
+                      tabletColumns: 2,
+                      desktopColumns: 2,
+                      spacing: 16,
+                      children: [
+                        _buildMetricCard(
+                          'Travel Time',
+                          '${_routingResult!.routingMetrics.travelTimeMinutes} min',
+                          Icons.directions_car,
+                          Colors.blue,
+                        ),
+                        _buildMetricCard(
+                          'Wait Time',
+                          '${_routingResult!.routingMetrics.estimatedWaitTimeMinutes} min',
+                          Icons.schedule,
+                          Colors.orange,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Responsive button layout
+                    ResponsiveGrid(
+                      mobileColumns: 1,
+                      tabletColumns: 2,
+                      desktopColumns: 2,
+                      spacing: 16,
+                      children: [
+                        ConstrainedResponsiveContainer.button(
+                          child: ElevatedButton(
+                            onPressed: () => _goToStep('consent'),
+                            child: const Text('Proceed to Hospital'),
                           ),
-                        ],
-                      ),
+                        ),
+                        ConstrainedResponsiveContainer.button(
+                          child: OutlinedButton(
+                            onPressed: () => _goToStep('vitals'),
+                            child: const Text('Back'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCard(
-                        'Travel Time',
-                        '${_routingResult!.routingMetrics.travelTimeMinutes} min',
-                        Icons.directions_car,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildMetricCard(
-                        'Wait Time',
-                        '${_routingResult!.routingMetrics.estimatedWaitTimeMinutes} min',
-                        Icons.schedule,
-                        Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => _goToStep('consent'),
-                        child: const Text('Proceed to Hospital'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    OutlinedButton(
-                      onPressed: () => _goToStep('vitals'),
-                      child: const Text('Back'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -606,30 +690,44 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
     IconData icon,
     Color color,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
+    return ConstrainedResponsiveContainer(
+      minWidth: 120,
+      maxWidth: 200,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
             ),
-          ),
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8)),
-          ),
-        ],
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: color.withValues(alpha: 0.8),
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

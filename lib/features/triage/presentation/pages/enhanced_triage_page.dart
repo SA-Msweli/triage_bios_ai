@@ -33,7 +33,6 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
   PatientVitals? _currentVitals;
   TriageResult? _assessmentResult;
   bool _isAssessing = false;
-  String _assessmentStep = 'input'; // input, processing, results
 
   // Animation controllers
   late AnimationController _processingController;
@@ -643,7 +642,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     setState(() {
       _isAssessing = true;
       _currentStepIndex = 2;
-      _assessmentStep = 'processing';
+      // Processing step
     });
 
     _processingController.repeat();
@@ -653,7 +652,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
       await Future.delayed(const Duration(seconds: 3));
 
       setState(() {
-        _assessmentStep = 'ai_analysis';
+        // AI analysis step
       });
 
       // Step 1: WatsonX.ai analysis
@@ -669,11 +668,11 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
       await Future.delayed(const Duration(seconds: 2));
 
       setState(() {
-        _assessmentStep = 'medical_validation';
+        // Medical validation step
       });
 
       // Step 2: Medical algorithm validation
-      final medicalAssessment = await _medicalService.analyzePatient(
+      await _medicalService.analyzePatient(
         symptoms:
             _inputData['textInput'] ??
             _inputData['voiceText'] ??
@@ -705,7 +704,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
         _assessmentResult = aiResult;
         _currentStepIndex = 3;
         _isAssessing = false;
-        _assessmentStep = 'results';
+        // Results step
       });
 
       _processingController.stop();
@@ -780,8 +779,9 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     final methods = <String>[];
     if (_inputData['voiceText']?.isNotEmpty == true) methods.add('Voice');
     if (_inputData['textInput']?.isNotEmpty == true) methods.add('Text');
-    if (_inputData['imageCount'] != null && _inputData['imageCount'] > 0)
+    if (_inputData['imageCount'] != null && _inputData['imageCount'] > 0) {
       methods.add('Image');
+    }
 
     return methods.isEmpty ? 'None' : methods.length.toString();
   }

@@ -32,26 +32,59 @@ Triage-BIOS.ai combines cutting-edge AI with real-time biometric data from weara
 
 ### Prerequisites
 
-- Flutter SDK 3.8.1+
-- Dart SDK 3.8.1+
-- IBM watsonx.ai API access (for production)
+- **Flutter SDK** 3.8.1+ - [Install Flutter](https://flutter.dev/docs/get-started/install)
+- **Dart SDK** 3.8.1+ (included with Flutter)
+- **Firebase CLI** - `npm install -g firebase-tools`
+- **IBM watsonx.ai API access** (for production)
 
-### Installation
+### Environment Setup
+
+1. **Copy environment template**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure your API keys** in `.env`:
+   ```bash
+   # Required for production
+   WATSONX_API_KEY=your_watsonx_api_key_here
+   WATSONX_PROJECT_ID=your_watsonx_project_id_here
+   
+   # Firebase configuration
+   FIREBASE_PROJECT_ID=triagebiosai
+   FIREBASE_WEB_API_KEY=your_firebase_web_api_key
+   
+   # Optional: Google Maps API key
+   GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+   ```
+
+### Installation & Running
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd triage_bios_ai
-
 # Install dependencies
 flutter pub get
+
+# Run on web (development mode with fallback values)
+flutter run -d chrome
+
+# Run on mobile device
+flutter run
 
 # Run tests
 flutter test
 
-# Run demo
+# Run standalone demo (command line)
 dart run standalone_demo.dart
 ```
+
+### Development vs Production
+
+- **Development**: Uses fallback/demo values for AI services
+- **Production**: Requires actual API keys in `.env` file
+
+The app will show configuration status on startup:
+- ✅ Green: Real API keys detected
+- ⚠️ Yellow: Using fallback/demo values
 
 ### Demo Output
 
@@ -74,6 +107,17 @@ Critical Vitals: HR=45, SpO2=88.0%, Temp=104.2°F
 Severity Score: 6.0/10 (3.0 from vitals)
 Urgency Level: URGENT
 ```
+
+### Web Application
+
+Access the live web application at: **https://triagebiosai.web.app**
+
+Features available in the web app:
+- Interactive triage assessment
+- Real-time AI analysis
+- Wearable device integration
+- Emergency contact system
+- Hospital capacity monitoring
 
 ## 🏗️ Architecture
 
@@ -218,12 +262,55 @@ flutter test test/features/triage/triage_service_test.dart
 flutter test --coverage
 ```
 
+## � Deploeyment
+
+### Quick Deploy
+
+**Windows:**
+```cmd
+deploy.bat
+```
+
+**Linux/macOS:**
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+### Manual Deployment
+
+```bash
+# Build for web
+flutter build web --release
+
+# Deploy to Firebase
+firebase deploy --only hosting
+```
+
+**Live URL**: https://triagebiosai.web.app
+
+### Troubleshooting
+
+**"Warning: .env file not found"**
+- Copy `.env.example` to `.env` and fill in your API keys
+- For development, the app will use fallback values
+
+**Build fails**
+- Run `flutter doctor` to check your Flutter installation
+- Run `flutter clean && flutter pub get` to refresh dependencies
+
+**Deploy fails**
+- Ensure you're logged into Firebase: `firebase login`
+- Check your project: `firebase projects:list`
+- Verify you have hosting enabled in Firebase console
+
 ## 📚 Documentation
 
-- [Architecture Guide](docs/ARCHITECTURE.md)
-- [API Reference](docs/API_REFERENCE.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
+Complete documentation is available in the project specification:
+
+- **[Project Specification](../.kiro/specs/triage-bios-ai/)** - Complete project spec
+- **[Environment Setup Guide](../.kiro/specs/triage-bios-ai/docs/environment-setup.md)** - Detailed environment configuration
+- **[Deployment Guide](../.kiro/specs/triage-bios-ai/docs/deployment.md)** - Complete deployment instructions
 
 ## 🤝 Contributing
 

@@ -1,150 +1,97 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../../../../shared/services/multimodal_input_service.dart';
-import '../../../../shared/services/watsonx_service.dart';
-import '../../../../config/app_config.dart';
+import '../../../../shared/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/constrained_responsive_container.dart';
 
-/// Enhanced multimodal input widget supporting voice, image, and text input
+/// Widget for multimodal input (voice, text, image) in triage assessment
 class MultimodalInputWidget extends StatefulWidget {
-  final Function(Map<String, dynamic>) onInputReceived;
   final bool enableVoice;
-  final bool enableImage;
   final bool enableText;
+  final bool enableImage;
+  final Function(Map<String, dynamic>)? onInputReceived;
 
   const MultimodalInputWidget({
     super.key,
-    required this.onInputReceived,
     this.enableVoice = true,
-    this.enableImage = true,
     this.enableText = true,
+    this.enableImage = true,
+    this.onInputReceived,
   });
 
   @override
   State<MultimodalInputWidget> createState() => _MultimodalInputWidgetState();
 }
 
-class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
-    with TickerProviderStateMixin {
-  final MultiModalInputService _multiModalService = MultiModalInputService();
-  final WatsonxService _watsonxService = WatsonxService();
-  final TextEditingController _textController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
-
+class _MultimodalInputWidgetState extends State<MultimodalInputWidget> {
+  int _selectedInputMethod = 0;
   bool _isListening = false;
-  bool _isProcessingImage = false;
   bool _isProcessingVoice = false;
-  String _voiceText = '';
-  List<File> _selectedImages = [];
-  late AnimationController _voiceAnimationController;
-  late Animation<double> _voiceAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeServices();
-    _setupAnimations();
-  }
+  bool _isProcessingImage = false;
+  final TextEditingController _textController = TextEditingController();
 
   @override
   void dispose() {
     _textController.dispose();
-    _voiceAnimationController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeServices() async {
-    try {
-      await _multiModalService.initialize();
-      _watsonxService.initialize(
-        apiKey: AppConfig.instance.watsonxApiKey,
-        projectId: AppConfig.instance.watsonxProjectId,
-      );
-    } catch (e) {
-      _showError('Failed to initialize multimodal services: $e');
-    }
-  }
-
-  void _setupAnimations() {
-    _voiceAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _voiceAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _voiceAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Icon(
-                  Icons.psychology,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'AI-Powered Symptom Input',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Use voice, images, or text to describe your symptoms. Our AI will analyze all inputs for comprehensive assessment.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return ConstrainedResponsiveContainer.card(
+      child: Card(
+        child: Padding(
+          padding: ResponsiveBreakpoints.getResponsivePadding(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Icon(Icons.input, color: Colors.blue.shade700, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Describe Your Symptoms',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Input method tabs
-            _buildInputMethodTabs(),
-
-            const SizedBox(height: 24),
-
-            // Voice input section
-            if (widget.enableVoice) ...[
-              _buildVoiceInputSection(),
               const SizedBox(height: 16),
-            ],
 
-            // Image input section
-            if (widget.enableImage) ...[
-              _buildImageInputSection(),
+              // Input method tabs
+              _buildInputMethodTabs(),
               const SizedBox(height: 16),
-            ],
 
-            // Text input section
-            if (widget.enableText) ...[
-              _buildTextInputSection(),
-              const SizedBox(height: 16),
-            ],
+              // Voice input section
+              if (widget.enableVoice && _selectedInputMethod == 0) ...[
+                _buildVoiceInputSection(),
+                const SizedBox(height: 16),
+              ],
 
-            // Processing status
-            if (_isProcessingVoice || _isProcessingImage) ...[
-              _buildProcessingStatus(),
-              const SizedBox(height: 16),
-            ],
+              // Text input section
+              if (widget.enableText && _selectedInputMethod == 1) ...[
+                _buildTextInputSection(),
+                const SizedBox(height: 16),
+              ],
 
-            // Results summary
-            _buildResultsSummary(),
-          ],
+              // Image input section
+              if (widget.enableImage && _selectedInputMethod == 2) ...[
+                _buildImageInputSection(),
+                const SizedBox(height: 16),
+              ],
+
+              // Processing status
+              if (_isProcessingVoice || _isProcessingImage) ...[
+                _buildProcessingStatus(),
+                const SizedBox(height: 16),
+              ],
+
+              // Results summary
+              _buildResultsSummary(),
+            ],
+          ),
         ),
       ),
     );
@@ -161,30 +108,15 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
         children: [
           if (widget.enableVoice)
             Expanded(
-              child: _buildTabButton(
-                'Voice',
-                Icons.mic,
-                _isListening,
-                () => _toggleVoiceInput(),
-              ),
-            ),
-          if (widget.enableImage)
-            Expanded(
-              child: _buildTabButton(
-                'Image',
-                Icons.camera_alt,
-                _selectedImages.isNotEmpty,
-                () => _selectImage(),
-              ),
+              child: _buildTabButton('Voice', Icons.mic, _isListening, 0),
             ),
           if (widget.enableText)
             Expanded(
-              child: _buildTabButton(
-                'Text',
-                Icons.text_fields,
-                _textController.text.isNotEmpty,
-                () => _focusTextInput(),
-              ),
+              child: _buildTabButton('Text', Icons.text_fields, false, 1),
+            ),
+          if (widget.enableImage)
+            Expanded(
+              child: _buildTabButton('Image', Icons.camera_alt, false, 2),
             ),
         ],
       ),
@@ -195,14 +127,15 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
     String label,
     IconData icon,
     bool isActive,
-    VoidCallback onTap,
+    int index,
   ) {
+    final isSelected = _selectedInputMethod == index;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => setState(() => _selectedInputMethod = index),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: isActive
+          color: isSelected
               ? Theme.of(context).colorScheme.primary
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
@@ -212,20 +145,19 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
           children: [
             Icon(
               icon,
-              color: isActive
+              size: 20,
+              color: isSelected
                   ? Theme.of(context).colorScheme.onPrimary
                   : Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 18,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isActive
+                color: isSelected
                     ? Theme.of(context).colorScheme.onPrimary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
@@ -235,289 +167,125 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
   }
 
   Widget _buildVoiceInputSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _isListening
-            ? Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isListening
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _isListening ? Colors.red.shade50 : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isListening ? Colors.red.shade200 : Colors.grey.shade200,
+            ),
+          ),
+          child: Column(
             children: [
-              AnimatedBuilder(
-                animation: _voiceAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _isListening ? _voiceAnimation.value : 1.0,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _isListening
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color: _isListening
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        size: 24,
-                      ),
-                    ),
-                  );
-                },
+              Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                size: 48,
+                color: _isListening ? Colors.red : Colors.grey,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isListening ? 'Listening...' : 'Voice Input',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _isListening
-                          ? 'Speak clearly about your symptoms'
-                          : 'Tap to start voice recording',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 16),
+              Text(
+                _isListening ? 'Listening...' : 'Tap to start recording',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              ElevatedButton(
-                onPressed: _toggleVoiceInput,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isListening ? Colors.red : null,
-                  foregroundColor: _isListening ? Colors.white : null,
-                ),
-                child: Text(_isListening ? 'Stop' : 'Start'),
+              const SizedBox(height: 8),
+              Text(
+                'Describe your symptoms in your own words',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          if (_voiceText.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Transcribed Text:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(_voiceText),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageInputSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.camera_alt,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Image Analysis',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Take photos of visible symptoms or medical documents',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _selectImage(fromCamera: true),
-                    icon: const Icon(Icons.camera_alt, size: 16),
-                    label: const Text('Camera'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => _selectImage(fromCamera: false),
-                    icon: const Icon(Icons.photo_library, size: 16),
-                    label: const Text('Gallery'),
-                  ),
-                ],
-              ),
-            ],
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: _toggleVoiceRecording,
+          icon: Icon(_isListening ? Icons.stop : Icons.mic),
+          label: Text(_isListening ? 'Stop Recording' : 'Start Recording'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isListening ? Colors.red : null,
+            foregroundColor: _isListening ? Colors.white : null,
           ),
-          if (_selectedImages.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _selectedImages.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            _selectedImages[index],
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: () => _removeImage(index),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildTextInputSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _textController,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText:
+                'Describe your symptoms, pain level, duration, and any other relevant details...',
+            border: OutlineInputBorder(),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: _processTextInput,
+          child: const Text('Submit Symptoms'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageInputSection() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.text_fields,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
+              Icon(Icons.camera_alt, size: 48, color: Colors.grey.shade600),
+              const SizedBox(height: 16),
+              Text(
+                'Take a photo of visible symptoms',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Text Description',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Type detailed description of your symptoms',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 8),
+              Text(
+                'Photos help AI provide better assessment',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _textController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Describe your symptoms in detail...',
-              border: OutlineInputBorder(),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _takePhoto,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Take Photo'),
+              ),
             ),
-            onChanged: (_) => _updateResults(),
-          ),
-        ],
-      ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _selectFromGallery,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('From Gallery'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -525,10 +293,9 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
       ),
       child: Row(
         children: [
@@ -538,24 +305,9 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Processing with AI...',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _isProcessingVoice
-                      ? 'Analyzing voice input with WatsonX.ai'
-                      : 'Processing images with computer vision',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+          Text(
+            'Processing your input...',
+            style: TextStyle(color: Colors.blue.shade700),
           ),
         ],
       ),
@@ -563,220 +315,111 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget>
   }
 
   Widget _buildResultsSummary() {
-    final hasAnyInput =
-        _voiceText.isNotEmpty ||
-        _selectedImages.isNotEmpty ||
-        _textController.text.isNotEmpty;
-
-    if (!hasAnyInput) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Use any combination of voice, image, or text input to describe your symptoms. The AI will analyze all inputs together.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(Icons.check_circle, color: Colors.green.shade700),
               const SizedBox(width: 8),
               Text(
                 'Input Summary',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (_voiceText.isNotEmpty)
-            _buildSummaryItem(
-              'Voice Input',
-              '${_voiceText.length} characters transcribed',
-            ),
-          if (_selectedImages.isNotEmpty)
-            _buildSummaryItem(
-              'Images',
-              '${_selectedImages.length} image(s) selected',
-            ),
-          if (_textController.text.isNotEmpty)
-            _buildSummaryItem(
-              'Text Input',
-              '${_textController.text.length} characters typed',
-            ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your symptoms have been recorded and will be analyzed by our AI system.',
+            style: TextStyle(fontSize: 12),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryItem(String label, String description) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(description, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
+  void _toggleVoiceRecording() {
+    setState(() {
+      _isListening = !_isListening;
+    });
 
-  // Input handling methods
-  Future<void> _toggleVoiceInput() async {
     if (_isListening) {
-      await _stopVoiceInput();
-    } else {
-      await _startVoiceInput();
+      // Start voice recording
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _isListening) {
+          setState(() {
+            _isListening = false;
+            _isProcessingVoice = true;
+          });
+
+          // Simulate processing
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _isProcessingVoice = false;
+              });
+              _notifyInputReceived({
+                'type': 'voice',
+                'content': 'Voice input processed',
+              });
+            }
+          });
+        }
+      });
     }
   }
 
-  Future<void> _startVoiceInput() async {
-    setState(() {
-      _isListening = true;
-      _isProcessingVoice = false;
-    });
-
-    _voiceAnimationController.repeat(reverse: true);
-
-    try {
-      // Simulate voice input for demo
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Mock transcription result
-      setState(() {
-        _voiceText =
-            'I have been experiencing chest pain and shortness of breath for the past 2 hours. The pain is sharp and gets worse when I breathe deeply.';
-        _isProcessingVoice = true;
-      });
-
-      // Simulate AI processing
-      await Future.delayed(const Duration(seconds: 3));
-
-      setState(() {
-        _isProcessingVoice = false;
-      });
-
-      _updateResults();
-    } catch (e) {
-      _showError('Voice input failed: $e');
+  void _processTextInput() {
+    if (_textController.text.isNotEmpty) {
+      _notifyInputReceived({'type': 'text', 'content': _textController.text});
+      _textController.clear();
     }
   }
 
-  Future<void> _stopVoiceInput() async {
+  void _takePhoto() {
     setState(() {
-      _isListening = false;
+      _isProcessingImage = true;
     });
-    _voiceAnimationController.stop();
-  }
 
-  Future<void> _selectImage({bool fromCamera = false}) async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: fromCamera ? ImageSource.camera : ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        setState(() {
-          _selectedImages.add(File(image.path));
-          _isProcessingImage = true;
-        });
-
-        // Simulate AI image processing
-        await Future.delayed(const Duration(seconds: 2));
-
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
         setState(() {
           _isProcessingImage = false;
         });
-
-        _updateResults();
+        _notifyInputReceived({'type': 'image', 'content': 'Photo captured'});
       }
-    } catch (e) {
-      _showError('Image selection failed: $e');
-    }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
     });
-    _updateResults();
   }
 
-  void _focusTextInput() {
-    // Focus on text input field
-    FocusScope.of(context).requestFocus();
+  void _selectFromGallery() {
+    setState(() {
+      _isProcessingImage = true;
+    });
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _isProcessingImage = false;
+        });
+        _notifyInputReceived({
+          'type': 'image',
+          'content': 'Image selected from gallery',
+        });
+      }
+    });
   }
 
-  void _updateResults() {
-    final inputData = {
-      'voiceText': _voiceText,
-      'textInput': _textController.text,
-      'imageCount': _selectedImages.length,
-      'images': _selectedImages.map((f) => f.path).toList(),
-      'hasMultimodalInput': true,
-      'inputTypes': [
-        if (_voiceText.isNotEmpty) 'voice',
-        if (_textController.text.isNotEmpty) 'text',
-        if (_selectedImages.isNotEmpty) 'image',
-      ],
-    };
-
-    widget.onInputReceived(inputData);
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+  void _notifyInputReceived(Map<String, dynamic> input) {
+    widget.onInputReceived?.call(input);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/dashboard/presentation/pages/login_page.dart';
@@ -11,10 +12,14 @@ import 'features/auth/presentation/pages/register_page.dart';
 import 'features/auth/presentation/pages/password_reset_page.dart';
 import 'features/auth/presentation/pages/profile_page.dart';
 import 'features/auth/presentation/pages/session_management_page.dart';
+import 'features/auth/presentation/pages/ldap_config_page.dart';
+import 'features/auth/presentation/pages/sso_config_page.dart';
+import 'features/auth/presentation/pages/identity_provider_management_page.dart';
 import 'features/dashboard/presentation/widgets/dashboard_router.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/firestore_auth_service.dart';
 import 'shared/services/firebase_service.dart';
+import 'shared/services/enterprise_auth_service.dart';
 import 'shared/middleware/auth_middleware.dart';
 import 'config/app_config.dart';
 import 'firebase_options.dart';
@@ -26,11 +31,16 @@ void main() async {
     // Initialize configuration system
     await AppConfig.initialize();
 
+    // Validate configuration
+    final missingVars = AppConfig.instance.validateRequiredVariables();
+    if (missingVars.isNotEmpty && kDebugMode) {
+      print('⚠️ Missing environment variables: ${missingVars.join(', ')}');
+      print('💡 Using fallback values for development');
+    }
+
     // Check if Firebase should be used
     if (AppConfig.instance.useFirebase) {
       try {
-        // Firebase configuration is handled by AppConfig
-
         // Initialize Firebase
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
@@ -47,30 +57,38 @@ void main() async {
         // Create demo users in Firestore if needed
         await authService.createDemoUsersInFirestore();
 
-        print('✅ Firebase/Firestore initialized successfully');
+        if (kDebugMode) {
+          print('✅ Firebase/Firestore initialized successfully');
+        }
         runApp(const TriageBiosApp());
       } catch (firebaseError) {
-        print(
-          '⚠️ Firebase initialization failed, falling back to local auth: $firebaseError',
-        );
+        if (kDebugMode) {
+          print(
+            '⚠️ Firebase initialization failed, falling back to local auth: $firebaseError',
+          );
+        }
         await _initializeLocalAuth();
         runApp(const TriageBiosApp());
       }
     } else {
-      print('📱 Using local authentication (Firebase disabled in .env)');
+      if (kDebugMode) {
+        print('📱 Using local authentication (Firebase disabled)');
+      }
       await _initializeLocalAuth();
       runApp(const TriageBiosApp());
     }
   } catch (e) {
-    print('❌ Critical initialization error: $e');
-    // Last resort: initialize with minimal local auth
+    if (kDebugMode) {
+      print('⚠️ Initialization error, using fallback configuration: $e');
+    }
+    // Fallback: initialize with minimal local auth
     await _initializeLocalAuth();
     runApp(const TriageBiosApp());
   }
 }
 
 Future<void> _initializeLocalAuth() async {
-  final authService = AuthService();
+  final authService = EnterpriseAuthService();
   await authService.initialize();
   await authService.createDemoUsers();
 }
@@ -105,6 +123,14 @@ class TriageBiosApp extends StatelessWidget {
         '/profile': (context) => AuthGuard(child: const ProfilePage()),
         '/sessions': (context) =>
             AuthGuard(child: const SessionManagementPage()),
+        '/ldap-config': (context) =>
+            AuthGuard(requiredRole: 'admin', child: const LdapConfigPage()),
+        '/sso-config': (context) =>
+            AuthGuard(requiredRole: 'admin', child: const SsoConfigPage()),
+        '/identity-providers': (context) => AuthGuard(
+          requiredRole: 'admin',
+          child: const IdentityProviderManagementPage(),
+        ),
 
         // Legacy routes (kept for compatibility)
         '/old-login': (context) => const LoginPage(),
@@ -123,15 +149,20 @@ class TriageBiosApp extends StatelessWidget {
         '/hospitals': (context) => AuthGuard(child: const HospitalFinderPage()),
         '/hospital-dashboard': (context) => const HospitalDashboard(),
 
-        // Role-based dashboard routes
-        '/patient-dashboard': (context) =>
-            AuthGuard(requiredRole: 'patient', child: const DashboardRouter()),
+        // Role-based dashboard routes with enhanced routing
+        '/patient-dashboard': (context) => AuthGuard(
+          requiredRole: 'patient',
+          requiredPermission: 'read_own_data',
+          child: const DashboardRouter(),
+        ),
         '/provider-dashboard': (context) => AuthGuard(
           requiredRole: 'healthcareProvider',
+          requiredPermission: 'read_assigned_patient_data',
           child: const DashboardRouter(),
         ),
         '/caregiver-dashboard': (context) => AuthGuard(
           requiredRole: 'caregiver',
+          requiredPermission: 'read_assigned_patient_data',
           child: const DashboardRouter(),
         ),
         '/admin-dashboard': (context) =>
@@ -161,8 +192,7 @@ class _HomePageState extends State<HomePage> {
     // If user is already authenticated, redirect to appropriate dashboard
     if (_authService.isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final route = AuthMiddleware.getDefaultRoute();
-        Navigator.of(context).pushReplacementNamed(route);
+        AuthMiddleware.navigatePostLogin(context);
       });
     }
   }
