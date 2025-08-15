@@ -230,7 +230,7 @@ flowchart TD
 - **Mobile Patient App**: Flutter-based user interface
 - **Hospital Dashboard**: Real-time patient queue management
 - **Advanced Wearables**: Multi-platform device support
-- **Hospital Integration**: FHIR API connectivity
+- **Hospital Integration**: Firebase/Firestore connectivity
 
 ### 🔮 Future Roadmap
 

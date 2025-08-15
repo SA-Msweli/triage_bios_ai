@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:logger/logger.dart';
 import 'fhir_service.dart';
+import '../models/hospital_capacity.dart';
 
 /// Service for optimizing hospital routing based on real-time capacity and patient needs
 class HospitalRoutingService {
@@ -176,8 +177,8 @@ class HospitalRoutingService {
         final distance = _calculateDistance(
           userLatitude,
           userLongitude,
-          hospital.latitude,
-          hospital.longitude,
+          hospital.latitude ?? 0.0,
+          hospital.longitude ?? 0.0,
         );
 
         // Estimate travel time (assuming average speed of 40 km/h in city)

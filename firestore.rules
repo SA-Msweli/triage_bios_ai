@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+             request.auth.token.role == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && 
+             request.auth.token.role in roles;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    function isHospitalAdmin(hospitalId) {
+      return isAuthenticated() && 
+             request.auth.token.role == 'hospital_admin' &&
+             request.auth.token.hospitalId == hospitalId;
+    }
+
+    // Hospitals Collection - Public read, admin write
+    match /hospitals/{hospitalId} {
+      allow read: if true; // Public read for hospital discovery
+      allow write: if hasAnyRole(['admin', 'hospital_admin']);
+      allow create: if hasRole('admin');
+      allow delete: if hasRole('admin');
+    }
+
+    // Hospital Capacity Collection - Public read, hospital/admin write
+    match /hospital_capacity/{capacityId} {
+      allow read: if true; // Public read for capacity monitoring
+      allow write: if hasAnyRole(['admin', 'hospital_admin']) ||
+                      isHospitalAdmin(resource.data.hospitalId);
+      allow create: if hasAnyRole(['admin', 'hospital_admin']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Patient Vitals Collection - Strict access control
+    match /patient_vitals/{vitalId} {
+      allow read: if isOwner(resource.data.patientId) ||
+                     hasAnyRole(['healthcare_provider', 'admin', 'caregiver']);
+      allow write: if isOwner(resource.data.patientId) ||
+                      hasAnyRole(['healthcare_provider', 'admin']);
+      allow create: if isOwner(request.resource.data.patientId) ||
+                       hasAnyRole(['healthcare_provider', 'admin']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Triage Results Collection - Healthcare provider access
+    match /triage_results/{resultId} {
+      allow read: if isOwner(resource.data.patientId) ||
+                     hasAnyRole(['healthcare_provider', 'admin', 'caregiver']);
+      allow write: if hasAnyRole(['healthcare_provider', 'admin']);
+      allow create: if hasAnyRole(['healthcare_provider', 'admin', 'patient']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Patient Consents Collection - Patient and provider access
+    match /patient_consents/{consentId} {
+      allow read: if isOwner(resource.data.patientId) ||
+                     isOwner(resource.data.providerId) ||
+                     hasRole('admin');
+      allow write: if isOwner(resource.data.patientId) ||
+                      hasRole('admin');
+      allow create: if isOwner(request.resource.data.patientId) ||
+                       hasRole('admin');
+      allow delete: if hasRole('admin');
+    }
+
+    // Device Data Collection - User and healthcare provider access
+    match /device_data/{deviceId} {
+      allow read: if isOwner(resource.data.userId) ||
+                     hasAnyRole(['healthcare_provider', 'admin']);
+      allow write: if isOwner(resource.data.userId) ||
+                      hasAnyRole(['healthcare_provider', 'admin']);
+      allow create: if isOwner(request.resource.data.userId) ||
+                       hasAnyRole(['healthcare_provider', 'admin']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Audit Logs Collection - Admin only
+    match /audit_logs/{logId} {
+      allow read: if hasRole('admin');
+      allow write: if hasRole('admin');
+      allow create: if hasAnyRole(['admin', 'healthcare_provider', 'hospital_admin']);
+      allow delete: if hasRole('admin');
+    }
+
+    // User Profiles Collection - User and admin access
+    match /users/{userId} {
+      allow read: if isOwner(userId) ||
+                     hasAnyRole(['admin', 'healthcare_provider']);
+      allow write: if isOwner(userId) ||
+                      hasRole('admin');
+      allow create: if isOwner(userId) ||
+                       hasRole('admin');
+      allow delete: if hasRole('admin');
+    }
+
+    // Emergency Access Override - For critical situations
+    match /emergency_access/{accessId} {
+      allow read: if hasAnyRole(['healthcare_provider', 'admin', 'emergency_responder']);
+      allow write: if hasAnyRole(['healthcare_provider', 'admin', 'emergency_responder']);
+      allow create: if hasAnyRole(['healthcare_provider', 'admin', 'emergency_responder']);
+      allow delete: if hasRole('admin');
+    }
+
+    // System Configuration - Admin only
+    match /system_config/{configId} {
+      allow read: if hasRole('admin');
+      allow write: if hasRole('admin');
+      allow create: if hasRole('admin');
+      allow delete: if hasRole('admin');
+    }
+
+    // Default deny rule for any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

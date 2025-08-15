@@ -4,6 +4,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:logger/logger.dart';
 import '../../domain/entities/hospital.dart';
 import '../../data/services/hospital_service.dart';
+import '../../../../shared/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/constrained_responsive_container.dart';
+import '../../../../shared/utils/overflow_detection.dart';
 
 class HospitalMapWidget extends StatefulWidget {
   final double? severityScore;
@@ -138,76 +141,133 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Wrap the entire widget with responsive constraints and overflow detection
+    return ConstrainedResponsiveContainer.hospitalMap(
+      child: Column(
+        children: [
+          // Map container with responsive height constraints
+          Expanded(child: _buildMapContent(context)),
+
+          // Hospital info panel with responsive behavior
+          if (_selectedHospital != null)
+            _buildResponsiveHospitalInfoPanel(context),
+        ],
+      ),
+    ).withOverflowDetection(debugName: 'Hospital Map Widget');
+  }
+
+  Widget _buildMapContent(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading nearby hospitals...'),
-          ],
-        ),
-      );
+      return _buildLoadingState(context);
     }
 
     if (_error != null) {
-      return Center(
+      return _buildErrorState(context);
+    }
+
+    return _buildMap(context);
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(strokeWidth: isMobile ? 3.0 : 4.0),
+          SizedBox(height: isMobile ? 12 : 16),
+          Text(
+            'Loading nearby hospitals...',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontSize: isMobile ? 14 : 16),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Center(
+      child: Padding(
+        padding: ResponsiveBreakpoints.getResponsivePadding(context),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.error_outline,
-              size: 64,
+              size: isMobile ? 48 : 64,
               color: Theme.of(context).colorScheme.error,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isMobile ? 12 : 16),
             Text(
               'Error Loading Map',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontSize: isMobile ? 18 : 24),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: isMobile ? 6 : 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: isMobile ? 12 : 14),
             ),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: _initializeMap, child: const Text('Retry')),
+            SizedBox(height: isMobile ? 12 : 16),
+            ConstrainedResponsiveContainer.button(
+              child: FilledButton.icon(
+                onPressed: _initializeMap,
+                icon: Icon(Icons.refresh, size: isMobile ? 18 : 20),
+                label: Text(
+                  'Retry',
+                  style: TextStyle(fontSize: isMobile ? 14 : 16),
+                ),
+              ),
+            ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return Column(
-      children: [
-        // Map
-        Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _currentPosition != null
-                  ? LatLng(
-                      _currentPosition!.latitude,
-                      _currentPosition!.longitude,
-                    )
-                  : _defaultLocation,
-              zoom: 12.0,
-            ),
-            onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
-              _onMapCreated();
-            },
-            markers: _buildMarkers(),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            compassEnabled: true,
-            mapToolbarEnabled: false,
-          ),
-        ),
+  Widget _buildMap(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
 
-        // Hospital info panel
-        if (_selectedHospital != null) _buildHospitalInfoPanel(),
-      ],
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: _currentPosition != null
+            ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+            : _defaultLocation,
+        zoom: isMobile
+            ? 11.0
+            : 12.0, // Slightly zoomed out on mobile for better overview
+      ),
+      onMapCreated: (GoogleMapController controller) {
+        _mapController = controller;
+        _onMapCreated();
+      },
+      markers: _buildMarkers(),
+      myLocationEnabled: true,
+      myLocationButtonEnabled: !isMobile, // Hide on mobile to save space
+      compassEnabled: !isMobile, // Hide on mobile to save space
+      mapToolbarEnabled: false,
+      zoomControlsEnabled:
+          isMobile, // Show zoom controls on mobile since other controls are hidden
+      rotateGesturesEnabled: true,
+      scrollGesturesEnabled: true,
+      zoomGesturesEnabled: true,
+      tiltGesturesEnabled:
+          !isMobile, // Disable tilt on mobile for simpler interaction
+      minMaxZoomPreference: MinMaxZoomPreference(
+        isMobile ? 10.0 : 8.0, // Minimum zoom
+        18.0, // Maximum zoom
+      ),
     );
   }
 
@@ -252,7 +312,7 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
     }
   }
 
-  Widget _buildHospitalInfoPanel() {
+  Widget _buildResponsiveHospitalInfoPanel(BuildContext context) {
     final hospital = _selectedHospital!;
     final distance = _currentPosition != null
         ? hospital.distanceFrom(
@@ -261,123 +321,215 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
           )
         : null;
 
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      width: double.infinity,
+      padding: ResponsiveBreakpoints.getResponsivePadding(context),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
+            blurRadius: isMobile ? 6 : 8,
             offset: const Offset(0, -2),
           ),
         ],
+        borderRadius: isMobile
+            ? const BorderRadius.vertical(top: Radius.circular(16))
+            : null,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: isMobile
+              ? 200
+              : 250, // Limit panel height to prevent map domination
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHospitalHeader(context, hospital, distance),
+              SizedBox(height: isMobile ? 8 : 12),
+              _buildCapacityInfo(context, hospital),
+              SizedBox(height: isMobile ? 8 : 12),
+              _buildActionButtons(context, hospital),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHospitalHeader(
+    BuildContext context,
+    Hospital hospital,
+    double? distance,
+  ) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hospital.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isMobile ? 16 : 18,
+                ),
+                maxLines: isMobile ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (distance != null) ...[
+                SizedBox(height: isMobile ? 2 : 4),
+                Text(
+                  '${distance.toStringAsFixed(1)} miles away',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: isMobile ? 12 : 14),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (_recommendedHospital?.id == hospital.id) ...[
+          SizedBox(width: isMobile ? 8 : 12),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 6 : 8,
+              vertical: isMobile ? 3 : 4,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
+            ),
+            child: Text(
+              isMobile ? 'REC' : 'RECOMMENDED',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: isMobile ? 10 : 12,
+              ),
+            ),
+          ),
+        ],
+        SizedBox(width: isMobile ? 4 : 8),
+        IconButton(
+          onPressed: () {
+            setState(() {
+              _selectedHospital = null;
+            });
+          },
+          icon: Icon(Icons.close, size: isMobile ? 20 : 24),
+          constraints: BoxConstraints(
+            minWidth: isMobile ? 36 : 44,
+            minHeight: isMobile ? 36 : 44,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCapacityInfo(BuildContext context, Hospital hospital) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    if (isMobile) {
+      // Stack info chips vertically on mobile for better readability
+      return Column(
         children: [
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hospital.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (distance != null)
-                      Text(
-                        '${distance.toStringAsFixed(1)} miles away',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                  ],
-                ),
-              ),
-              if (_recommendedHospital?.id == hospital.id)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'RECOMMENDED',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedHospital = null;
-                  });
-                },
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Capacity info
-          Row(
-            children: [
-              _buildInfoChip(
-                icon: Icons.bed,
-                label: '${hospital.capacity.availableBeds} beds',
-                color: hospital.capacity.availableBeds > 10
-                    ? Colors.green
-                    : hospital.capacity.availableBeds > 0
-                    ? Colors.orange
-                    : Colors.red,
-              ),
-              const SizedBox(width: 8),
-              _buildInfoChip(
-                icon: Icons.access_time,
-                label:
-                    '${hospital.performance.averageWaitTime.toInt()} min wait',
-                color: hospital.performance.averageWaitTime < 30
-                    ? Colors.green
-                    : hospital.performance.averageWaitTime < 60
-                    ? Colors.orange
-                    : Colors.red,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _callHospital(hospital),
-                  icon: const Icon(Icons.phone),
-                  label: const Text('Call'),
+                child: _buildInfoChip(
+                  icon: Icons.bed,
+                  label: '${hospital.capacity.availableBeds} beds',
+                  color: hospital.capacity.availableBeds > 10
+                      ? Colors.green
+                      : hospital.capacity.availableBeds > 0
+                      ? Colors.orange
+                      : Colors.red,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _navigateToHospital(hospital),
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Navigate'),
+                child: _buildInfoChip(
+                  icon: Icons.access_time,
+                  label: '${hospital.performance.averageWaitTime.toInt()} min',
+                  color: hospital.performance.averageWaitTime < 30
+                      ? Colors.green
+                      : hospital.performance.averageWaitTime < 60
+                      ? Colors.orange
+                      : Colors.red,
                 ),
               ),
             ],
           ),
         ],
-      ),
+      );
+    } else {
+      // Horizontal layout for tablet and desktop
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _buildInfoChip(
+            icon: Icons.bed,
+            label: '${hospital.capacity.availableBeds} beds available',
+            color: hospital.capacity.availableBeds > 10
+                ? Colors.green
+                : hospital.capacity.availableBeds > 0
+                ? Colors.orange
+                : Colors.red,
+          ),
+          _buildInfoChip(
+            icon: Icons.access_time,
+            label: '${hospital.performance.averageWaitTime.toInt()} min wait',
+            color: hospital.performance.averageWaitTime < 30
+                ? Colors.green
+                : hospital.performance.averageWaitTime < 60
+                ? Colors.orange
+                : Colors.red,
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildActionButtons(BuildContext context, Hospital hospital) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: ConstrainedResponsiveContainer.button(
+            child: OutlinedButton.icon(
+              onPressed: () => _callHospital(hospital),
+              icon: Icon(Icons.phone, size: isMobile ? 16 : 18),
+              label: Text(
+                'Call',
+                style: TextStyle(fontSize: isMobile ? 14 : 16),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: isMobile ? 8 : 12),
+        Expanded(
+          child: ConstrainedResponsiveContainer.button(
+            child: FilledButton.icon(
+              onPressed: () => _navigateToHospital(hospital),
+              icon: Icon(Icons.directions, size: isMobile ? 16 : 18),
+              label: Text(
+                'Navigate',
+                style: TextStyle(fontSize: isMobile ? 14 : 16),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -386,24 +538,33 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
     required String label,
     required Color color,
   }) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 6 : 8,
+        vertical: isMobile ? 3 : 4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Icon(icon, size: isMobile ? 14 : 16, color: color),
+          SizedBox(width: isMobile ? 3 : 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

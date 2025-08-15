@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
-import 'features/dashboard/presentation/pages/login_page.dart';
+// Removed duplicate login page import - using auth/presentation/pages/login_page.dart
 import 'features/dashboard/presentation/pages/triage_portal_page.dart';
 import 'features/triage/presentation/pages/enhanced_triage_page.dart';
 import 'features/hospital_routing/presentation/pages/hospital_finder_page.dart';
@@ -132,8 +132,7 @@ class TriageBiosApp extends StatelessWidget {
           child: const IdentityProviderManagementPage(),
         ),
 
-        // Legacy routes (kept for compatibility)
-        '/old-login': (context) => const LoginPage(),
+        // Legacy routes (kept for compatibility) - removed duplicate login page
         '/dashboard': (context) => const DashboardPage(),
 
         // Triage routes (consolidated)

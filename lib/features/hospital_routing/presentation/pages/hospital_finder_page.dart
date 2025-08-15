@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/services/fhir_service.dart';
 import '../../../../shared/services/hospital_routing_service.dart';
+import '../../../../shared/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/constrained_responsive_container.dart';
+import '../../../../shared/models/hospital_capacity.dart';
+import '../widgets/hospital_map_widget.dart';
 
 /// Hospital finder page for locating nearby emergency facilities
 class HospitalFinderPage extends StatefulWidget {
@@ -17,6 +21,7 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
   List<HospitalCapacity> _hospitals = [];
   bool _isLoading = true;
   String? _errorMessage;
+  bool _showMapView = false;
 
   @override
   void initState() {
@@ -62,11 +67,23 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find Hospitals'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         actions: [
+          // Toggle between list and map view
+          IconButton(
+            icon: Icon(_showMapView ? Icons.list : Icons.map),
+            onPressed: () {
+              setState(() {
+                _showMapView = !_showMapView;
+              });
+            },
+            tooltip: _showMapView ? 'Show List' : 'Show Map',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadHospitals,
@@ -74,72 +91,150 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildResponsiveBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildResponsiveBody(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+    final isTablet = ResponsiveBreakpoints.isTablet(context);
+
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading nearby hospitals...'),
-          ],
-        ),
-      );
+      return _buildLoadingState(context);
     }
 
     if (_errorMessage != null) {
-      return Center(
+      return _buildErrorState(context);
+    }
+
+    if (_hospitals.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    // On mobile, show either map or list based on toggle
+    if (isMobile) {
+      return _showMapView ? _buildMapView(context) : _buildListView(context);
+    }
+
+    // On tablet and desktop, show both map and list side by side
+    return Row(
+      children: [
+        // Map view (left side)
+        Expanded(flex: isTablet ? 1 : 2, child: _buildMapView(context)),
+
+        // List view (right side)
+        Expanded(flex: 1, child: _buildListView(context)),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(strokeWidth: isMobile ? 3.0 : 4.0),
+          SizedBox(height: isMobile ? 12 : 16),
+          Text(
+            'Loading nearby hospitals...',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontSize: isMobile ? 14 : 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Center(
+      child: Padding(
+        padding: ResponsiveBreakpoints.getResponsivePadding(context),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.error_outline,
-              size: 64,
+              size: isMobile ? 48 : 64,
               color: Theme.of(context).colorScheme.error,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isMobile ? 12 : 16),
             Text(
               'Error Loading Hospitals',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Theme.of(context).colorScheme.error,
+                fontSize: isMobile ? 18 : 24,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: isMobile ? 6 : 8),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: isMobile ? 12 : 14),
+            ),
+            SizedBox(height: isMobile ? 12 : 24),
+            ConstrainedResponsiveContainer.button(
+              child: ElevatedButton.icon(
+                onPressed: _loadHospitals,
+                icon: Icon(Icons.refresh, size: isMobile ? 18 : 20),
+                label: Text(
+                  'Try Again',
+                  style: TextStyle(fontSize: isMobile ? 14 : 16),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(_errorMessage!),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadHospitals,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-            ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    if (_hospitals.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_hospital, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No hospitals found in your area'),
-          ],
-        ),
-      );
-    }
+  Widget _buildEmptyState(BuildContext context) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
 
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.local_hospital,
+            size: isMobile ? 48 : 64,
+            color: Colors.grey,
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
+          Text(
+            'No hospitals found in your area',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontSize: isMobile ? 16 : 18),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapView(BuildContext context) {
+    return ConstrainedResponsiveContainer.hospitalMap(
+      child: const HospitalMapWidget(
+        severityScore: null, // Can be passed from triage results
+      ),
+    );
+  }
+
+  Widget _buildListView(BuildContext context) {
     return Column(
       children: [
         // Header
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveBreakpoints.getResponsivePadding(context),
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Row(
             children: [
@@ -148,11 +243,14 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                '${_hospitals.length} hospitals found nearby',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  '${_hospitals.length} hospitals found nearby',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -161,11 +259,11 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
         // Hospital list
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: ResponsiveBreakpoints.getResponsivePadding(context),
             itemCount: _hospitals.length,
             itemBuilder: (context, index) {
               final hospital = _hospitals[index];
-              return _buildHospitalCard(hospital);
+              return _buildResponsiveHospitalCard(hospital);
             },
           ),
         ),
@@ -173,140 +271,244 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
     );
   }
 
-  Widget _buildHospitalCard(HospitalCapacity hospital) {
+  Widget _buildResponsiveHospitalCard(HospitalCapacity hospital) {
     final occupancyRate = hospital.occupancyRate;
     final isNearCapacity = hospital.isNearCapacity;
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hospital name and distance
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    hospital.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (hospital.distanceKm != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+    return ConstrainedResponsiveContainer.card(
+      margin: EdgeInsets.only(bottom: isMobile ? 12 : 16),
+      child: Card(
+        child: Padding(
+          padding: ResponsiveBreakpoints.getResponsivePadding(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hospital name and distance
+              Row(
+                children: [
+                  Expanded(
                     child: Text(
-                      '${hospital.distanceKm!.toStringAsFixed(1)} km',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      hospital.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: isMobile ? 16 : 18,
                       ),
+                      maxLines: isMobile ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Capacity information
-            Row(
-              children: [
-                Expanded(
-                  child: _buildCapacityItem(
-                    'Total Beds',
-                    '${hospital.availableBeds}/${hospital.totalBeds}',
-                    occupancyRate,
-                    isNearCapacity,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildCapacityItem(
-                    'Emergency',
-                    '${hospital.emergencyBeds}',
-                    null,
-                    false,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildCapacityItem(
-                    'ICU',
-                    '${hospital.icuBeds}',
-                    null,
-                    false,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Status and actions
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isNearCapacity
-                        ? Colors.red.shade100
-                        : Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isNearCapacity ? Icons.warning : Icons.check_circle,
-                        size: 16,
-                        color: isNearCapacity
-                            ? Colors.red.shade700
-                            : Colors.green.shade700,
+                  if (hospital.distanceKm != null) ...[
+                    SizedBox(width: isMobile ? 8 : 12),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 6 : 8,
+                        vertical: isMobile ? 3 : 4,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isNearCapacity ? 'Near Capacity' : 'Available',
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
+                      ),
+                      child: Text(
+                        '${hospital.distanceKm!.toStringAsFixed(1)} km',
                         style: TextStyle(
-                          color: isNearCapacity
-                              ? Colors.red.shade700
-                              : Colors.green.shade700,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: isMobile ? 10 : 12,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ],
+              ),
+
+              SizedBox(height: isMobile ? 8 : 12),
+
+              // Capacity information - responsive layout
+              if (isMobile)
+                // Mobile: Stack vertically for better readability
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCapacityItem(
+                            'Beds',
+                            '${hospital.availableBeds}/${hospital.totalBeds}',
+                            occupancyRate,
+                            isNearCapacity,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCapacityItem(
+                            'Emergency',
+                            '${hospital.emergencyBeds}',
+                            null,
+                            false,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCapacityItem(
+                            'ICU',
+                            '${hospital.icuBeds}',
+                            null,
+                            false,
+                          ),
+                        ),
+                        const Expanded(
+                          child: SizedBox(),
+                        ), // Empty space for alignment
+                      ],
+                    ),
+                  ],
+                )
+              else
+                // Tablet/Desktop: Horizontal layout
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCapacityItem(
+                        'Total Beds',
+                        '${hospital.availableBeds}/${hospital.totalBeds}',
+                        occupancyRate,
+                        isNearCapacity,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildCapacityItem(
+                        'Emergency',
+                        '${hospital.emergencyBeds}',
+                        null,
+                        false,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildCapacityItem(
+                        'ICU',
+                        '${hospital.icuBeds}',
+                        null,
+                        false,
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () => _showHospitalDetails(hospital),
-                  icon: const Icon(Icons.info, size: 16),
-                  label: const Text('Details'),
+
+              SizedBox(height: isMobile ? 8 : 12),
+
+              // Status and actions - responsive layout
+              if (isMobile)
+                // Mobile: Stack vertically
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusChip(isNearCapacity),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ConstrainedResponsiveContainer.button(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showHospitalDetails(hospital),
+                              icon: Icon(Icons.info, size: isMobile ? 14 : 16),
+                              label: Text(
+                                'Details',
+                                style: TextStyle(fontSize: isMobile ? 12 : 14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ConstrainedResponsiveContainer.button(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _navigateToHospital(hospital),
+                              icon: Icon(
+                                Icons.directions,
+                                size: isMobile ? 14 : 16,
+                              ),
+                              label: Text(
+                                'Navigate',
+                                style: TextStyle(fontSize: isMobile ? 12 : 14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              else
+                // Tablet/Desktop: Horizontal layout
+                Row(
+                  children: [
+                    _buildStatusChip(isNearCapacity),
+                    const Spacer(),
+                    ConstrainedResponsiveContainer.button(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showHospitalDetails(hospital),
+                        icon: const Icon(Icons.info, size: 16),
+                        label: const Text('Details'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ConstrainedResponsiveContainer.button(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToHospital(hospital),
+                        icon: const Icon(Icons.directions, size: 16),
+                        label: const Text('Navigate'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _navigateToHospital(hospital),
-                  icon: const Icon(Icons.directions, size: 16),
-                  label: const Text('Navigate'),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(bool isNearCapacity) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 6 : 8,
+        vertical: isMobile ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: isNearCapacity ? Colors.red.shade100 : Colors.green.shade100,
+        borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isNearCapacity ? Icons.warning : Icons.check_circle,
+            size: isMobile ? 14 : 16,
+            color: isNearCapacity ? Colors.red.shade700 : Colors.green.shade700,
+          ),
+          SizedBox(width: isMobile ? 3 : 4),
+          Text(
+            isNearCapacity ? 'Near Capacity' : 'Available',
+            style: TextStyle(
+              color: isNearCapacity
+                  ? Colors.red.shade700
+                  : Colors.green.shade700,
+              fontWeight: FontWeight.bold,
+              fontSize: isMobile ? 10 : 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -317,6 +519,8 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
     double? occupancyRate,
     bool isWarning,
   ) {
+    final isMobile = ResponsiveBreakpoints.isMobile(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -324,18 +528,22 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: isMobile ? 11 : 12,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: isMobile ? 1 : 2),
         Text(
           value,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: isWarning ? Colors.red : null,
+            fontSize: isMobile ? 12 : 14,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
         if (occupancyRate != null) ...[
-          const SizedBox(height: 4),
+          SizedBox(height: isMobile ? 3 : 4),
           LinearProgressIndicator(
             value: occupancyRate,
             backgroundColor: Colors.grey.shade300,

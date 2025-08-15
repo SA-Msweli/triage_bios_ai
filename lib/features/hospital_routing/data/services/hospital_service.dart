@@ -1,5 +1,6 @@
 import 'package:logger/logger.dart';
 import '../../domain/entities/hospital.dart';
+import '../../../../shared/models/hospital_capacity.dart';
 
 class HospitalService {
   static final HospitalService _instance = HospitalService._internal();
@@ -151,7 +152,9 @@ class HospitalService {
         traumaLevel: 1,
         specializations: ['emergency', 'cardiology', 'trauma', 'neurology'],
         certifications: ['Joint Commission', 'Magnet', 'Trauma Center Level I'],
-        capacity: HospitalCapacity(
+        capacity: HospitalCapacity.fromBasic(
+          id: 'hosp_001',
+          name: 'City General Hospital',
           totalBeds: 450,
           availableBeds: 23,
           icuBeds: 8,
@@ -165,7 +168,6 @@ class HospitalService {
           treatmentSuccessRate: 0.94,
           monthlyVolume: 2800,
         ),
-        fhirEndpoint: 'https://api.citygeneral.org/fhir/R4',
       ),
 
       Hospital(
@@ -178,7 +180,9 @@ class HospitalService {
         traumaLevel: 2,
         specializations: ['emergency', 'orthopedics', 'pediatrics'],
         certifications: ['Joint Commission', 'Baby-Friendly'],
-        capacity: HospitalCapacity(
+        capacity: HospitalCapacity.fromBasic(
+          id: 'hosp_002',
+          name: 'Metropolitan Medical Center',
           totalBeds: 320,
           availableBeds: 45,
           icuBeds: 12,
@@ -192,7 +196,6 @@ class HospitalService {
           treatmentSuccessRate: 0.91,
           monthlyVolume: 1950,
         ),
-        fhirEndpoint: 'https://api.metromedical.org/fhir/R4',
       ),
 
       Hospital(
@@ -205,7 +208,9 @@ class HospitalService {
         traumaLevel: 1,
         specializations: ['emergency', 'cardiology', 'stroke', 'trauma'],
         certifications: ['Joint Commission', 'Comprehensive Stroke Center'],
-        capacity: HospitalCapacity(
+        capacity: HospitalCapacity.fromBasic(
+          id: 'hosp_003',
+          name: 'St. Mary\'s Emergency Hospital',
           totalBeds: 280,
           availableBeds: 8,
           icuBeds: 3,
@@ -219,7 +224,6 @@ class HospitalService {
           treatmentSuccessRate: 0.96,
           monthlyVolume: 2200,
         ),
-        fhirEndpoint: 'https://api.stmarys.org/fhir/R4',
       ),
 
       Hospital(
@@ -232,7 +236,9 @@ class HospitalService {
         traumaLevel: 1,
         specializations: ['emergency', 'research', 'oncology', 'neurosurgery'],
         certifications: ['Joint Commission', 'Magnet', 'NCI Cancer Center'],
-        capacity: HospitalCapacity(
+        capacity: HospitalCapacity.fromBasic(
+          id: 'hosp_004',
+          name: 'University Hospital',
           totalBeds: 520,
           availableBeds: 67,
           icuBeds: 15,
@@ -246,7 +252,6 @@ class HospitalService {
           treatmentSuccessRate: 0.93,
           monthlyVolume: 3100,
         ),
-        fhirEndpoint: 'https://api.universityhospital.org/fhir/R4',
       ),
 
       Hospital(
@@ -259,7 +264,9 @@ class HospitalService {
         traumaLevel: 3,
         specializations: ['emergency', 'family medicine', 'internal medicine'],
         certifications: ['Joint Commission'],
-        capacity: HospitalCapacity(
+        capacity: HospitalCapacity.fromBasic(
+          id: 'hosp_005',
+          name: 'Riverside Community Hospital',
           totalBeds: 180,
           availableBeds: 32,
           icuBeds: 6,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/hospital_capacity.dart';
+import '../../../../shared/models/hospital_capacity.dart';
 
 class RealTimeStatsWidget extends StatelessWidget {
   final HospitalCapacity capacity;

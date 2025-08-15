@@ -1,237 +1,114 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
-/// Overflow detection and prevention utilities
-class OverflowDetection {
-  static bool _debugMode = kDebugMode;
-
-  /// Enable or disable debug mode for overflow detection
-  static void setDebugMode(bool enabled) {
-    _debugMode = enabled;
-  }
-
-  /// Check if debug mode is enabled
-  static bool get isDebugMode => _debugMode;
-
-  /// Log overflow warning in debug mode
-  static void logOverflowWarning(String widgetName, String details) {
-    if (_debugMode) {
-      debugPrint('🚨 OVERFLOW WARNING: $widgetName - $details');
+/// Extension to add overflow detection to widgets for debugging
+extension OverflowDetection on Widget {
+  /// Wraps widget with overflow detection for debugging purposes
+  Widget withOverflowDetection({String? debugName}) {
+    if (kDebugMode) {
+      return _OverflowDetectionWrapper(
+        debugName: debugName,
+        child: this,
+      );
     }
+    return this;
   }
+}
 
-  /// Check if a RenderBox has overflow
-  static bool hasOverflow(RenderBox renderBox) {
-    if (renderBox.hasSize) {
-      final size = renderBox.size;
-      final constraints = renderBox.constraints;
+class _OverflowDetectionWrapper extends StatelessWidget {
+  final Widget child;
+  final String? debugName;
 
-      // Check if the widget exceeds its constraints
-      return size.width > constraints.maxWidth ||
-          size.height > constraints.maxHeight;
-    }
-    return false;
-  }
+  const _OverflowDetectionWrapper({
+    required this.child,
+    this.debugName,
+  });
 
-  /// Get overflow information for a RenderBox
-  static OverflowInfo getOverflowInfo(RenderBox renderBox) {
-    if (!renderBox.hasSize) {
-      return const OverflowInfo(hasOverflow: false);
-    }
-
-    final size = renderBox.size;
-    final constraints = renderBox.constraints;
-
-    final widthOverflow = size.width > constraints.maxWidth
-        ? size.width - constraints.maxWidth
-        : 0.0;
-    final heightOverflow = size.height > constraints.maxHeight
-        ? size.height - constraints.maxHeight
-        : 0.0;
-
-    return OverflowInfo(
-      hasOverflow: widthOverflow > 0 || heightOverflow > 0,
-      widthOverflow: widthOverflow,
-      heightOverflow: heightOverflow,
-      actualSize: size,
-      constraints: constraints,
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: 0,
+          minHeight: 0,
+          maxWidth: constraints.maxWidth,
+          maxHeight: constraints.maxHeight,
+          child: Stack(
+            children: [
+              child,
+              if (kDebugMode)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      debugName ?? 'Widget',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-/// Information about widget overflow
-class OverflowInfo {
-  final bool hasOverflow;
-  final double widthOverflow;
-  final double heightOverflow;
-  final Size? actualSize;
-  final BoxConstraints? constraints;
-
-  const OverflowInfo({
-    required this.hasOverflow,
-    this.widthOverflow = 0.0,
-    this.heightOverflow = 0.0,
-    this.actualSize,
-    this.constraints,
-  });
-
-  @override
-  String toString() {
-    if (!hasOverflow) return 'No overflow detected';
-
-    return 'Overflow detected: '
-        'Width: ${widthOverflow.toStringAsFixed(1)}px, '
-        'Height: ${heightOverflow.toStringAsFixed(1)}px, '
-        'Actual size: ${actualSize?.width.toStringAsFixed(1)}x${actualSize?.height.toStringAsFixed(1)}, '
-        'Max constraints: ${constraints?.maxWidth.toStringAsFixed(1)}x${constraints?.maxHeight.toStringAsFixed(1)}';
-  }
-}
-
-/// Widget that automatically detects and prevents overflow
-class OverflowSafeWidget extends StatelessWidget {
-  final Widget child;
+/// Custom render object for detecting overflow
+class OverflowDetector extends SingleChildRenderObjectWidget {
   final String? debugName;
-  final bool enableScrolling;
-  final ScrollPhysics? scrollPhysics;
-  final bool enableAutoFix;
 
-  const OverflowSafeWidget({
+  const OverflowDetector({
     super.key,
-    required this.child,
+    required Widget child,
     this.debugName,
-    this.enableScrolling = true,
-    this.scrollPhysics,
-    this.enableAutoFix = true,
-  });
+  }) : super(child: child);
 
   @override
-  Widget build(BuildContext context) {
-    if (!enableAutoFix) {
-      return child;
-    }
+  RenderObject createRenderObject(BuildContext context) {
+    return RenderOverflowDetector(debugName: debugName);
+  }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return _OverflowDetector(
-          debugName: debugName,
-          enableScrolling: enableScrolling,
-          scrollPhysics: scrollPhysics,
-          child: child,
-        );
-      },
-    );
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderOverflowDetector renderObject,
+  ) {
+    renderObject.debugName = debugName;
   }
 }
 
-/// Internal widget for detecting overflow and applying fixes
-class _OverflowDetector extends StatefulWidget {
-  final Widget child;
-  final String? debugName;
-  final bool enableScrolling;
-  final ScrollPhysics? scrollPhysics;
+class RenderOverflowDetector extends RenderProxyBox {
+  String? debugName;
 
-  const _OverflowDetector({
-    required this.child,
-    this.debugName,
-    this.enableScrolling = true,
-    this.scrollPhysics,
-  });
+  RenderOverflowDetector({this.debugName});
 
   @override
-  State<_OverflowDetector> createState() => _OverflowDetectorState();
-}
-
-class _OverflowDetectorState extends State<_OverflowDetector> {
-  bool _hasDetectedOverflow = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // In debug mode, check for overflow after the frame is built
-        if (OverflowDetection.isDebugMode) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _checkForOverflow();
-          });
-        }
-
-        // If overflow was detected and scrolling is enabled, wrap in scrollable
-        if (_hasDetectedOverflow && widget.enableScrolling) {
-          return SingleChildScrollView(
-            physics: widget.scrollPhysics,
-            child: widget.child,
-          );
-        }
-
-        return widget.child;
-      },
-    );
-  }
-
-  void _checkForOverflow() {
-    final renderObject = context.findRenderObject();
-    if (renderObject is RenderBox && renderObject.hasSize) {
-      final overflowInfo = OverflowDetection.getOverflowInfo(renderObject);
-
-      if (overflowInfo.hasOverflow && !_hasDetectedOverflow) {
-        final widgetName = widget.debugName ?? 'Unknown Widget';
-        OverflowDetection.logOverflowWarning(
-          widgetName,
-          overflowInfo.toString(),
+  void performLayout() {
+    super.performLayout();
+    
+    if (kDebugMode && child != null) {
+      final childSize = child!.size;
+      final constraintSize = constraints.biggest;
+      
+      if (childSize.width > constraintSize.width ||
+          childSize.height > constraintSize.height) {
+        debugPrint(
+          'OVERFLOW DETECTED in ${debugName ?? 'Widget'}: '
+          'Child size: $childSize, Constraint size: $constraintSize',
         );
-
-        if (widget.enableScrolling) {
-          setState(() {
-            _hasDetectedOverflow = true;
-          });
-        }
       }
     }
-  }
-}
-
-/// Extension to add overflow detection to any widget
-extension OverflowDetectionExtension on Widget {
-  /// Wrap this widget with overflow detection and automatic scrolling
-  Widget withOverflowDetection({
-    String? debugName,
-    bool enableScrolling = true,
-    ScrollPhysics? scrollPhysics,
-    bool enableAutoFix = true,
-  }) {
-    return OverflowSafeWidget(
-      debugName: debugName,
-      enableScrolling: enableScrolling,
-      scrollPhysics: scrollPhysics,
-      enableAutoFix: enableAutoFix,
-      child: this,
-    );
-  }
-}
-
-/// Mixin for widgets that want to implement overflow detection
-mixin OverflowDetectionMixin<T extends StatefulWidget> on State<T> {
-  /// Check for overflow in the current widget
-  void checkOverflow({String? debugName}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final renderObject = context.findRenderObject();
-      if (renderObject is RenderBox && renderObject.hasSize) {
-        final overflowInfo = OverflowDetection.getOverflowInfo(renderObject);
-
-        if (overflowInfo.hasOverflow) {
-          final widgetName = debugName ?? T.toString();
-          OverflowDetection.logOverflowWarning(
-            widgetName,
-            overflowInfo.toString(),
-          );
-          onOverflowDetected(overflowInfo);
-        }
-      }
-    });
-  }
-
-  /// Called when overflow is detected - override to handle overflow
-  void onOverflowDetected(OverflowInfo overflowInfo) {
-    // Default implementation - can be overridden
   }
 }

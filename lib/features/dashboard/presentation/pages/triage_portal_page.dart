@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/triage_form_widget.dart';
 import '../widgets/vitals_display_widget.dart';
-import '../widgets/hospital_map_widget.dart';
+import '../../../hospital_routing/presentation/widgets/hospital_map_widget.dart';
 import '../widgets/consent_panel_widget.dart';
-import '../../../../shared/services/fhir_service.dart';
+
 import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/services/consent_service.dart';
 import '../../../../shared/services/watsonx_service.dart';
@@ -13,8 +13,9 @@ import '../../../../shared/services/multimodal_input_service.dart';
 import '../../../../shared/services/vitals_trend_service.dart';
 import '../../../../shared/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/responsive_widget.dart';
+import '../../../../shared/models/hospital_capacity.dart';
 import '../../../../shared/widgets/constrained_responsive_container.dart';
-import '../../../../shared/widgets/responsive_grid.dart';
+import '../../../../shared/widgets/responsive_layouts.dart';
 import '../../../../shared/utils/overflow_detection.dart';
 
 /// Responsive triage portal for patient assessment and hospital routing
@@ -53,9 +54,6 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
     });
 
     try {
-      // Initialize all services according to spec
-      FhirService().initialize();
-
       // Initialize WatsonX AI service for symptom analysis
       _watsonxService.initialize(
         apiKey: AppConfig.instance.watsonxApiKey,
@@ -112,94 +110,350 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   }
 
   Widget _buildDesktopLayout() {
-    return ResponsiveThreeColumnLayout(
-      leftChild: ConstrainedResponsiveContainer(
-        minWidth: 280,
-        maxWidth: 320,
-        child: Container(color: Colors.blue.shade50, child: _buildSidebar()),
-      ),
-      centerChild: ConstrainedResponsiveContainer(
-        child: _buildMainContent().withOverflowDetection(
-          debugName: 'Desktop Main Content',
+    return Scaffold(
+      body: ResponsiveThreeColumnLayout(
+        leftChild: ConstrainedResponsiveContainer(
+          minWidth: 280,
+          maxWidth: 320,
+          child: Container(
+            color: Colors.blue.shade50,
+            child: Column(
+              children: [
+                // Desktop sidebar header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_hospital, color: Colors.white, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Triage-BIOS.ai',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Sidebar content
+                Expanded(child: _buildSidebar()),
+              ],
+            ),
+          ),
         ),
+        centerChild: ConstrainedResponsiveContainer(
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: Column(
+              children: [
+                // Desktop main header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getStepTitle(),
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            LinearProgressIndicator(
+                              value: _getProgressValue(),
+                              backgroundColor: Colors.grey.shade300,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.blue.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      _buildStepIndicator(),
+                    ],
+                  ),
+                ),
+                // Main content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: _buildMainContent().withOverflowDetection(
+                      debugName: 'Desktop Main Content',
+                    ),
+                  ),
+                ),
+                // Desktop navigation buttons
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: _buildStepNavigationButtons(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        rightChild: ConstrainedResponsiveContainer(
+          minWidth: 300,
+          maxWidth: 420,
+          child: Container(
+            color: Colors.grey.shade50,
+            child: Column(
+              children: [
+                // Right panel header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Text(
+                    'Hospital Information',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Right panel content
+                Expanded(
+                  child: _buildRightPanel().withOverflowDetection(
+                    debugName: 'Desktop Right Panel',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        leftFlex: 1.0,
+        centerFlex: 2.0,
+        rightFlex: 1.2,
+        spacing: 0,
       ),
-      rightChild: ConstrainedResponsiveContainer(
-        minWidth: 300,
-        maxWidth: 420,
-        child: Container(color: Colors.grey.shade50, child: _buildRightPanel()),
-      ),
-      leftFlex: 1.0,
-      centerFlex: 2.0,
-      rightFlex: 1.2,
-      spacing: 0,
     );
   }
 
   Widget _buildTabletLayout() {
-    return Column(
-      children: [
-        // Top navigation with constraints
-        ConstrainedResponsiveContainer(
-          minHeight: 60,
-          maxHeight: 100,
-          child: Container(
-            color: Colors.blue.shade50,
-            child: _buildTopNavigation(),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade50,
+        foregroundColor: Colors.blue.shade700,
+        elevation: 1,
+        title: Row(
+          children: [
+            Icon(Icons.local_hospital, color: Colors.blue.shade700, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Triage-BIOS.ai',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 24),
+            child: _buildStepIndicator(),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: LinearProgressIndicator(
+            value: _getProgressValue(),
+            backgroundColor: Colors.grey.shade300,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
           ),
         ),
-        // Main content with responsive two-column layout
-        Expanded(
-          child: ResponsiveTwoColumnLayout(
-            leftChild: _buildMainContent().withOverflowDetection(
-              debugName: 'Tablet Main Content',
+      ),
+      body: ResponsiveTwoColumnLayout(
+        leftChild: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              right: BorderSide(color: Colors.grey.shade200, width: 1),
             ),
-            rightChild: _buildRightPanel().withOverflowDetection(
-              debugName: 'Tablet Right Panel',
-            ),
-            leftFlex: 2.0,
-            rightFlex: 1.0,
-            spacing: 0,
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: ResponsiveBreakpoints.getResponsivePadding(context),
+                  child: _buildMainContent().withOverflowDetection(
+                    debugName: 'Tablet Main Content',
+                  ),
+                ),
+              ),
+              // Tablet navigation buttons
+              Container(
+                padding: ResponsiveBreakpoints.getResponsivePadding(context),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: _buildStepNavigationButtons(),
+              ),
+            ],
           ),
         ),
-      ],
+        rightChild: Container(
+          color: Colors.grey.shade50,
+          child: Column(
+            children: [
+              // Right panel header
+              Container(
+                width: double.infinity,
+                padding: ResponsiveBreakpoints.getResponsivePadding(context),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Text(
+                  'Hospital Information',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Right panel content
+              Expanded(
+                child: _buildRightPanel().withOverflowDetection(
+                  debugName: 'Tablet Right Panel',
+                ),
+              ),
+            ],
+          ),
+        ),
+        leftFlex: 2.0,
+        rightFlex: 1.2,
+        spacing: 0,
+      ),
     );
   }
 
   Widget _buildMobileLayout() {
     return Scaffold(
       resizeToAvoidBottomInset: true, // Handle keyboard properly
-      body: Column(
-        children: [
-          // Mobile header with constraints
-          ConstrainedResponsiveContainer(
-            minHeight: 44, // Minimum touch target
-            maxHeight: 80,
-            child: Container(
-              color: Colors.blue.shade700,
-              child: _buildMobileHeader(),
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade700,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            Icon(Icons.local_hospital, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Triage-BIOS.ai',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          // Progress indicator
-          ConstrainedResponsiveContainer(
-            minHeight: 6,
-            maxHeight: 12,
-            child: LinearProgressIndicator(
-              value: _getProgressValue(),
-              backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-            ),
-          ),
-          // Main content with overflow protection
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: _buildMainContent().withOverflowDetection(
-                debugName: 'Mobile Main Content',
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Text(
+                _getStepTitle(),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(8),
+          child: ConstrainedResponsiveContainer(
+            minHeight: 6,
+            maxHeight: 8,
+            child: LinearProgressIndicator(
+              value: _getProgressValue(),
+              backgroundColor: Colors.blue.shade800,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
       ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Emergency banner for mobile
+            if (_currentStep == 'symptoms') _buildMobileEmergencyBanner(),
+
+            // Main content with overflow protection
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: ResponsiveBreakpoints.getResponsivePadding(context),
+                child: _buildMainContent().withOverflowDetection(
+                  debugName: 'Mobile Main Content',
+                ),
+              ),
+            ),
+
+            // Mobile navigation buttons
+            _buildMobileNavigationButtons(),
+          ],
+        ),
+      ),
+      // Mobile drawer for additional options
+      drawer: _buildMobileDrawer(),
     );
   }
 
@@ -347,44 +601,226 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
     );
   }
 
-  Widget _buildTopNavigation() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          Icon(Icons.local_hospital, color: Colors.blue.shade700, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Triage-BIOS.ai',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
+  Widget _buildMobileEmergencyBanner() {
+    return ConstrainedResponsiveContainer.card(
+      margin: ResponsiveBreakpoints.getResponsiveMargin(context),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.emergency, color: Colors.red.shade700, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Emergency? Call 911 immediately',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const Spacer(),
-          _buildStepIndicator(),
-        ],
+            ConstrainedResponsiveContainer.button(
+              child: TextButton(
+                onPressed: () => _showEmergencyDialog(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red.shade700,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: const Size(44, 32),
+                ),
+                child: const Text('Call', style: TextStyle(fontSize: 12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMobileHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Icon(Icons.local_hospital, color: Colors.white, size: 24),
-          const SizedBox(width: 8),
-          Text(
-            'Triage-BIOS.ai',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+  Widget _buildMobileNavigationButtons() {
+    return Container(
+      padding: ResponsiveBreakpoints.getResponsivePadding(context),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(top: false, child: _buildStepNavigationButtons()),
+    );
+  }
+
+  Widget _buildStepNavigationButtons() {
+    return ResponsiveGrid(
+      mobileColumns: _canGoBack() && _canGoNext() ? 2 : 1,
+      tabletColumns: 2,
+      desktopColumns: 2,
+      spacing: 12,
+      children: [
+        if (_canGoBack())
+          ConstrainedResponsiveContainer.button(
+            child: OutlinedButton.icon(
+              onPressed: _goBack,
+              icon: const Icon(Icons.arrow_back, size: 18),
+              label: const Text('Back'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
             ),
           ),
-          const Spacer(),
-          Text(_getStepTitle(), style: const TextStyle(color: Colors.white)),
-        ],
+        if (_canGoNext())
+          ConstrainedResponsiveContainer.button(
+            child: ElevatedButton.icon(
+              onPressed: _goNext,
+              icon: const Icon(Icons.arrow_forward, size: 18),
+              label: Text(_getNextButtonText()),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Drawer header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              color: Colors.blue.shade50,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_hospital,
+                        color: Colors.blue.shade700,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Triage-BIOS.ai',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'AI-Powered Emergency Triage',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Progress steps
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Progress',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildProgressSteps(),
+
+                    const Spacer(),
+
+                    // Emergency contact in drawer
+                    ConstrainedResponsiveContainer.card(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.emergency,
+                                  color: Colors.red.shade700,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Emergency',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red.shade700,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'If this is a life-threatening emergency, call 911 immediately.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(height: 8),
+                            ConstrainedResponsiveContainer.button(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showEmergencyDialog(),
+                                icon: const Icon(Icons.phone, size: 18),
+                                label: const Text('Call 911'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade700,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(double.infinity, 44),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -482,8 +918,13 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
             // Hospital map with size constraints
             ConstrainedResponsiveContainer.hospitalMap(
               child: HospitalMapWidget(
-                hospitals: _nearbyHospitals,
-                selectedHospital: _routingResult?.recommendedHospital,
+                severityScore: _triageData['severity_score'] as double?,
+                onHospitalSelected: (hospital) {
+                  // Handle hospital selection
+                  setState(() {
+                    // Update routing result with selected hospital
+                  });
+                },
               ),
             ),
 
@@ -774,6 +1215,114 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
       default:
         return 'Triage';
     }
+  }
+
+  bool _canGoBack() {
+    switch (_currentStep) {
+      case 'symptoms':
+        return false;
+      case 'vitals':
+        return true;
+      case 'routing':
+        return true;
+      case 'consent':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool _canGoNext() {
+    switch (_currentStep) {
+      case 'symptoms':
+        return _triageData.containsKey('symptoms');
+      case 'vitals':
+        return _triageData.containsKey('vitals');
+      case 'routing':
+        return _routingResult != null;
+      case 'consent':
+        return false; // Consent is the final step
+      default:
+        return false;
+    }
+  }
+
+  String _getNextButtonText() {
+    switch (_currentStep) {
+      case 'symptoms':
+        return 'Check Vitals';
+      case 'vitals':
+        return 'Find Hospital';
+      case 'routing':
+        return 'Continue';
+      default:
+        return 'Next';
+    }
+  }
+
+  void _goBack() {
+    switch (_currentStep) {
+      case 'vitals':
+        _goToStep('symptoms');
+        break;
+      case 'routing':
+        _goToStep('vitals');
+        break;
+      case 'consent':
+        _goToStep('routing');
+        break;
+    }
+  }
+
+  void _goNext() {
+    switch (_currentStep) {
+      case 'symptoms':
+        _goToStep('vitals');
+        break;
+      case 'vitals':
+        _processTriageAndRoute();
+        break;
+      case 'routing':
+        _goToStep('consent');
+        break;
+    }
+  }
+
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.emergency, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            const Text('Emergency'),
+          ],
+        ),
+        content: const Text(
+          'This will open your phone\'s dialer to call 911. '
+          'Only use this for life-threatening emergencies.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // In a real app, this would use url_launcher to call 911
+              _showInfo('Emergency services would be contacted');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Call 911'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _processTriageAndRoute() async {

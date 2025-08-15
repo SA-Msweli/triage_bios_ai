@@ -1,7 +1,15 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+/// Unified hospital capacity model used across the application
 class HospitalCapacity extends Equatable {
+  // Basic identification
+  final String id;
+  final String name;
+  final double? latitude;
+  final double? longitude;
+
+  // Capacity data
   final int totalBeds;
   final int availableBeds;
   final int icuBeds;
@@ -11,19 +19,29 @@ class HospitalCapacity extends Equatable {
   final double averageWaitTime;
   final DateTime lastUpdated;
 
+  // Optional data
+  final double? distanceKm;
+
   const HospitalCapacity({
+    required this.id,
+    required this.name,
+    this.latitude,
+    this.longitude,
     required this.totalBeds,
     required this.availableBeds,
     required this.icuBeds,
     required this.emergencyBeds,
     required this.staffOnDuty,
-    required this.patientsInQueue,
-    required this.averageWaitTime,
+    this.patientsInQueue = 0,
+    this.averageWaitTime = 0.0,
     required this.lastUpdated,
+    this.distanceKm,
   });
 
   factory HospitalCapacity.initial() {
     return HospitalCapacity(
+      id: 'demo_hospital',
+      name: 'Demo Hospital',
       totalBeds: 450,
       availableBeds: 23,
       icuBeds: 8,
@@ -35,6 +53,34 @@ class HospitalCapacity extends Equatable {
     );
   }
 
+  /// Create from basic capacity data (for hospital routing)
+  factory HospitalCapacity.fromBasic({
+    required String id,
+    required String name,
+    required int totalBeds,
+    required int availableBeds,
+    required int icuBeds,
+    required int emergencyBeds,
+    required int staffOnDuty,
+    required DateTime lastUpdated,
+    double? latitude,
+    double? longitude,
+  }) {
+    return HospitalCapacity(
+      id: id,
+      name: name,
+      latitude: latitude,
+      longitude: longitude,
+      totalBeds: totalBeds,
+      availableBeds: availableBeds,
+      icuBeds: icuBeds,
+      emergencyBeds: emergencyBeds,
+      staffOnDuty: staffOnDuty,
+      lastUpdated: lastUpdated,
+    );
+  }
+
+  // Computed properties
   double get occupancyRate =>
       totalBeds > 0 ? (totalBeds - availableBeds) / totalBeds : 1.0;
 
@@ -42,6 +88,7 @@ class HospitalCapacity extends Equatable {
 
   bool get isNearCapacity => occupancyRate > 0.85;
   bool get isAtCapacity => occupancyRate > 0.95;
+  bool get hasEmergencyCapacity => emergencyBeds > 5;
 
   String get capacityStatus {
     if (isAtCapacity) return 'At Capacity';
@@ -55,9 +102,13 @@ class HospitalCapacity extends Equatable {
     return const Color(0xFF388E3C); // Green
   }
 
-  bool get isDataFresh => DateTime.now().difference(lastUpdated).inMinutes < 5;
+  bool get isDataFresh => DateTime.now().difference(lastUpdated).inMinutes < 10;
 
   HospitalCapacity copyWith({
+    String? id,
+    String? name,
+    double? latitude,
+    double? longitude,
     int? totalBeds,
     int? availableBeds,
     int? icuBeds,
@@ -66,8 +117,13 @@ class HospitalCapacity extends Equatable {
     int? patientsInQueue,
     double? averageWaitTime,
     DateTime? lastUpdated,
+    double? distanceKm,
   }) {
     return HospitalCapacity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       totalBeds: totalBeds ?? this.totalBeds,
       availableBeds: availableBeds ?? this.availableBeds,
       icuBeds: icuBeds ?? this.icuBeds,
@@ -76,11 +132,16 @@ class HospitalCapacity extends Equatable {
       patientsInQueue: patientsInQueue ?? this.patientsInQueue,
       averageWaitTime: averageWaitTime ?? this.averageWaitTime,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      distanceKm: distanceKm ?? this.distanceKm,
     );
   }
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
+    id,
+    name,
+    latitude,
+    longitude,
     totalBeds,
     availableBeds,
     icuBeds,
@@ -89,5 +150,6 @@ class HospitalCapacity extends Equatable {
     patientsInQueue,
     averageWaitTime,
     lastUpdated,
+    distanceKm,
   ];
 }

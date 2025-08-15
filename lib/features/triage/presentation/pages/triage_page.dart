@@ -4,7 +4,7 @@ import '../bloc/triage_bloc.dart';
 import '../bloc/triage_event.dart';
 import '../bloc/triage_state.dart';
 import '../widgets/symptom_input_widget.dart';
-import '../widgets/vitals_display_widget.dart';
+import '../../../dashboard/presentation/widgets/vitals_display_widget.dart';
 import '../widgets/triage_result_widget.dart';
 import '../widgets/trend_analysis_widget.dart';
 

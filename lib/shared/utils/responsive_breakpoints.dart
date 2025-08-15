@@ -1,48 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// Responsive breakpoints for the Triage BioS AI application
-/// Provides consistent breakpoint handling across all components
+/// Responsive breakpoint utilities for consistent UI across devices
 class ResponsiveBreakpoints {
-  // Breakpoint constants matching the design specification
-  static const double mobile = 600.0;
-  static const double tablet = 800.0;
-  static const double desktop = 1200.0;
+  // Breakpoint constants
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1024;
+  static const double desktopBreakpoint = 1440;
 
-  /// Check if the current screen size is mobile (<600px)
+  /// Check if current screen is mobile size
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < mobile;
+    return MediaQuery.of(context).size.width < mobileBreakpoint;
   }
 
-  /// Check if the current screen size is tablet (600px - 1200px)
+  /// Check if current screen is tablet size
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    return width >= mobile && width < desktop;
+    return width >= mobileBreakpoint && width < desktopBreakpoint;
   }
 
-  /// Check if the current screen size is desktop (>=1200px)
+  /// Check if current screen is desktop size
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= desktop;
-  }
-
-  /// Get the current device type based on screen width
-  static DeviceType getDeviceType(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width < mobile) return DeviceType.mobile;
-    if (width < desktop) return DeviceType.tablet;
-    return DeviceType.desktop;
-  }
-
-  /// Get screen size information for responsive calculations
-  static ScreenSizeInfo getScreenInfo(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    return ScreenSizeInfo(
-      width: mediaQuery.size.width,
-      height: mediaQuery.size.height,
-      devicePixelRatio: mediaQuery.devicePixelRatio,
-      orientation: mediaQuery.orientation,
-      deviceType: getDeviceType(context),
-      isKeyboardVisible: mediaQuery.viewInsets.bottom > 0,
-    );
+    return MediaQuery.of(context).size.width >= desktopBreakpoint;
   }
 
   /// Get responsive padding based on screen size
@@ -50,9 +28,9 @@ class ResponsiveBreakpoints {
     if (isMobile(context)) {
       return const EdgeInsets.all(16.0);
     } else if (isTablet(context)) {
-      return const EdgeInsets.all(24.0);
+      return const EdgeInsets.all(20.0);
     } else {
-      return const EdgeInsets.all(32.0);
+      return const EdgeInsets.all(24.0);
     }
   }
 
@@ -66,35 +44,26 @@ class ResponsiveBreakpoints {
       return const EdgeInsets.all(16.0);
     }
   }
-}
 
-/// Device type enumeration
-enum DeviceType { mobile, tablet, desktop }
+  /// Get responsive font size multiplier
+  static double getFontSizeMultiplier(BuildContext context) {
+    if (isMobile(context)) {
+      return 0.9;
+    } else if (isTablet(context)) {
+      return 1.0;
+    } else {
+      return 1.1;
+    }
+  }
 
-/// Screen size information model
-class ScreenSizeInfo {
-  final double width;
-  final double height;
-  final double devicePixelRatio;
-  final Orientation orientation;
-  final DeviceType deviceType;
-  final bool isKeyboardVisible;
-
-  const ScreenSizeInfo({
-    required this.width,
-    required this.height,
-    required this.devicePixelRatio,
-    required this.orientation,
-    required this.deviceType,
-    required this.isKeyboardVisible,
-  });
-
-  /// Check if the screen is in landscape mode
-  bool get isLandscape => orientation == Orientation.landscape;
-
-  /// Check if the screen is in portrait mode
-  bool get isPortrait => orientation == Orientation.portrait;
-
-  /// Get the aspect ratio of the screen
-  double get aspectRatio => width / height;
+  /// Get responsive icon size
+  static double getIconSize(BuildContext context, {double baseSize = 24.0}) {
+    if (isMobile(context)) {
+      return baseSize * 0.9;
+    } else if (isTablet(context)) {
+      return baseSize;
+    } else {
+      return baseSize * 1.1;
+    }
+  }
 }
