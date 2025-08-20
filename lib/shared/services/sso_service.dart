@@ -227,9 +227,7 @@ class SsoService extends IntegratedAuthService {
       }
 
       // Get user info from userinfo endpoint if needed
-      if (userInfo == null) {
-        userInfo = await _getUserInfoFromEndpoint(tokenResponse.accessToken);
-      }
+      userInfo ??= await _getUserInfoFromEndpoint(tokenResponse.accessToken);
 
       if (userInfo == null) {
         return SsoAuthResult.error('Failed to retrieve user information');

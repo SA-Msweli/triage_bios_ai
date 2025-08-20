@@ -5,14 +5,14 @@ import '../widgets/enhanced_vitals_widget.dart';
 import '../widgets/triage_result_widget.dart';
 import '../../domain/entities/triage_result.dart';
 import '../../domain/entities/patient_vitals.dart';
-import '../../../../shared/services/watsonx_service.dart';
+// import '../../../../shared/services/watsonx_service.dart'; // Removed WatsonX
 import '../../../../shared/services/medical_algorithm_service.dart';
 import '../../../../shared/services/vitals_trend_service.dart';
-import '../../../../shared/services/fhir_service.dart';
+// import '../../../../shared/services/fhir_service.dart'; // Removed FHIR
 import '../../../../shared/services/hospital_routing_service.dart';
-import '../../../../config/app_config.dart';
+// import '../../../../config/app_config.dart';
 
-/// Enhanced triage assessment page with full AI integration and multimodal input
+/// Enhanced triage assessment page with AI integration (excluding WatsonX) and multimodal input
 class EnhancedTriagePage extends StatefulWidget {
   const EnhancedTriagePage({super.key});
 
@@ -22,10 +22,10 @@ class EnhancedTriagePage extends StatefulWidget {
 
 class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     with TickerProviderStateMixin {
-  final WatsonxService _watsonxService = WatsonxService();
+  // final WatsonxService _watsonxService = WatsonxService(); // Removed WatsonX
   final MedicalAlgorithmService _medicalService = MedicalAlgorithmService();
   final VitalsTrendService _trendService = VitalsTrendService();
-  final FhirService _fhirService = FhirService();
+  // final FhirService _fhirService = FhirService(); // Removed FHIR
   final HospitalRoutingService _routingService = HospitalRoutingService();
 
   // Assessment state
@@ -67,15 +67,15 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
 
   Future<void> _initializeServices() async {
     try {
-      // Initialize all services
-      _watsonxService.initialize(
-        apiKey: AppConfig.instance.watsonxApiKey,
-        projectId: AppConfig.instance.watsonxProjectId,
-      );
-      _fhirService.initialize();
+      // Initialize services (WatsonX and FHIR removed)
+      // _watsonxService.initialize( // Removed WatsonX
+      //   apiKey: AppConfig.instance.watsonxApiKey,
+      //   projectId: AppConfig.instance.watsonxProjectId,
+      // );
+      // _fhirService.initialize(); // Removed FHIR
 
       _showInfo(
-        'AI Triage Engine initialized with WatsonX.ai and medical algorithms',
+        'AI Triage Engine initialized with medical algorithms', // Updated message
       );
     } catch (e) {
       _showError('Failed to initialize services: $e');
@@ -124,7 +124,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withAlpha((255 * 0.1).round()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -205,7 +205,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                             ? Colors.green
                             : Theme.of(
                                 context,
-                              ).colorScheme.outline.withValues(alpha: 0.3),
+                              ).colorScheme.outline.withAlpha((255 * 0.3).round()),
                       ),
                   ],
                 ),
@@ -289,7 +289,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    Icons.psychology,
+                    Icons.psychology_outlined, // Changed Icon
                     color: Theme.of(context).colorScheme.primary,
                     size: 32,
                   ),
@@ -306,7 +306,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Advanced assessment using WatsonX.ai, medical algorithms, and real-time vitals',
+                        'Advanced assessment using medical algorithms and real-time vitals', // Updated description
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -322,12 +322,12 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             // AI Status indicators
             Row(
               children: [
-                _buildStatusChip('WatsonX.ai', true, Colors.blue),
-                const SizedBox(width: 8),
+                // _buildStatusChip('WatsonX.ai', true, Colors.blue), // Removed WatsonX
+                // const SizedBox(width: 8), // Removed WatsonX
                 _buildStatusChip('Medical Algorithms', true, Colors.green),
                 const SizedBox(width: 8),
-                _buildStatusChip('FHIR Integration', true, Colors.purple),
-                const SizedBox(width: 8),
+                // _buildStatusChip('FHIR Integration', true, Colors.purple), // Removed FHIR
+                // const SizedBox(width: 8), // Removed FHIR
                 _buildStatusChip(
                   'Real-time Vitals',
                   _currentVitals != null,
@@ -345,10 +345,10 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
+        color: isActive ? color.withAlpha((255 * 0.1).round()) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? color.withValues(alpha: 0.3) : Colors.grey.shade300,
+          color: isActive ? color.withAlpha((255 * 0.3).round()) : Colors.grey.shade300,
         ),
       ),
       child: Row(
@@ -395,10 +395,10 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                       colors: [
                         Theme.of(
                           context,
-                        ).colorScheme.primary.withValues(alpha: 0.3),
+                        ).colorScheme.primary.withAlpha((255 * 0.3).round()),
                         Theme.of(
                           context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
+                        ).colorScheme.primary.withAlpha((255 * 0.1).round()),
                       ],
                     ),
                   ),
@@ -413,7 +413,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                       child: Transform.rotate(
                         angle: _processingAnimation.value * 2 * 3.14159,
                         child: Icon(
-                          Icons.psychology,
+                          Icons.science_outlined, // Changed Icon
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 40,
                         ),
@@ -438,10 +438,10 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             // Processing steps
             Column(
               children: [
-                _buildProcessingStep(
-                  'Analyzing multimodal input with WatsonX.ai',
-                  true,
-                ),
+                // _buildProcessingStep( // Removed WatsonX
+                //   'Analyzing multimodal input with WatsonX.ai',
+                //   true,
+                // ),
                 _buildProcessingStep(
                   'Running medical algorithm validation',
                   true,
@@ -533,8 +533,8 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                 Expanded(
                   child: _buildSummaryItem(
                     'AI Models',
-                    '2 Active',
-                    Icons.psychology,
+                    '1 Active', // Updated AI model count
+                    Icons.science_outlined, // Changed Icon
                   ),
                 ),
               ],
@@ -573,7 +573,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withAlpha((255 * 0.1).round()),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -655,15 +655,31 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
         // AI analysis step
       });
 
-      // Step 1: WatsonX.ai analysis
-      final aiResult = await _watsonxService.assessSymptoms(
-        symptoms:
-            _inputData['textInput'] ??
-            _inputData['voiceText'] ??
-            'General symptoms',
-        vitals: _currentVitals,
-        demographics: {'age': 35, 'gender': 'unknown'},
+      // Step 1: WatsonX.ai analysis (Removed)
+      // final aiResult = await _watsonxService.assessSymptoms( 
+      //   symptoms:
+      //       _inputData['textInput'] ??
+      //       _inputData['voiceText'] ??
+      //       'General symptoms',
+      //   vitals: _currentVitals,
+      //   demographics: {'age': 35, 'gender': 'unknown'},
+      // );
+
+      // Simulate a result as if WatsonX was called
+      final aiResult = TriageResult(
+        assessmentId: 'temp-patient-id', // Corrected from patientId
+        severityScore: 5.0, 
+        confidenceLower: 0.0, // Added missing parameter
+        confidenceUpper: 0.0, // Added missing parameter
+        urgencyLevel: UrgencyLevel.standard, // Corrected from .medium
+        explanation: 'Symptoms processed by medical algorithms.',
+        keySymptoms: <String>[], // Added missing parameter
+        concerningFindings: <String>[], // Added missing parameter
+        recommendedActions: ['Monitor vitals', 'Consult specialist if symptoms worsen'],
+        aiModelVersion: 'sim_v1.0', // Added missing parameter
+        timestamp: DateTime.now(),
       );
+
 
       await Future.delayed(const Duration(seconds: 2));
 
@@ -678,7 +694,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             _inputData['voiceText'] ??
             'General symptoms',
         vitals: _currentVitals,
-        aiResult: {
+        aiResult: { // Using simulated aiResult
           'severityScore': aiResult.severityScore,
           'urgencyLevel': aiResult.urgencyLevelString,
           'explanation': aiResult.explanation,
@@ -765,7 +781,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
       case 0:
         return Icons.arrow_forward;
       case 1:
-        return Icons.psychology;
+        return Icons.science_outlined; // Changed Icon
       case 2:
         return _isAssessing ? Icons.hourglass_empty : Icons.arrow_forward;
       case 3:
@@ -797,11 +813,11 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'This enhanced triage system uses multiple AI technologies:',
+                'This enhanced triage system uses AI technologies:', // Updated help text
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
-              Text('• WatsonX.ai for natural language processing'),
+              // Text('• WatsonX.ai for natural language processing'), // Removed WatsonX
               Text('• Medical algorithms for clinical validation'),
               Text('• Real-time vitals from wearable devices'),
               Text('• Multimodal input (voice, text, images)'),

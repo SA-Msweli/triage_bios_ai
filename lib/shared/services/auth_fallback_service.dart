@@ -191,7 +191,7 @@ class AuthFallbackService {
         _lastError = 'Primary authentication health check failed';
 
         _logger.w(
-          'Auth health check failed (${_consecutiveFailures}/${_maxFailureCount})',
+          'Auth health check failed ($_consecutiveFailures/$_maxFailureCount)',
         );
 
         // Trigger fallback if threshold reached

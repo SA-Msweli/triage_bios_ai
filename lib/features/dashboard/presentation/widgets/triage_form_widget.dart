@@ -182,7 +182,7 @@ class _TriageFormWidgetState extends State<TriageFormWidget> {
             maxLines: 1,
           ),
           const SizedBox(height: 12),
-          ConstrainedResponsiveContainer.inputField(
+          ConstrainedResponsiveContainer( // Changed from .inputField
             child: TextFormField(
               controller: _symptomsController,
               maxLines: 4,
@@ -219,7 +219,7 @@ class _TriageFormWidgetState extends State<TriageFormWidget> {
             softWrap: true,
           ),
           const SizedBox(height: 12),
-          ConstrainedResponsiveContainer.inputField(
+          ConstrainedResponsiveContainer( // Changed from .inputField
             child: TextFormField(
               controller: _durationController,
               decoration: const InputDecoration(

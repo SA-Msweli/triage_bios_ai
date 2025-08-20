@@ -78,17 +78,20 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
 
   Future<void> _loadNearbyHospitals() async {
     try {
-      final hospitals = await FhirService().getHospitalCapacities(
+      // Use the existing _routingService instance
+      final hospitals = await _routingService.getNearbyHospitals( 
         latitude: 40.7128, // Default to NYC
         longitude: -74.0060,
         radiusKm: 25.0,
       );
 
-      setState(() {
-        _nearbyHospitals = hospitals;
-      });
+      if (mounted) { // Check if the widget is still in the tree
+        setState(() {
+          _nearbyHospitals = hospitals;
+        });
+      }
     } catch (e) {
-      // Handle error silently for demo
+      _showError('Failed to load nearby hospitals: $e'); // It's better to show an error
     }
   }
 

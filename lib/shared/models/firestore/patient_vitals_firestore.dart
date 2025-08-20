@@ -37,12 +37,15 @@ class PatientVitalsFirestore extends Equatable {
   bool get hasAbnormalVitals {
     if (heartRate != null && (heartRate! < 60 || heartRate! > 100)) return true;
     if (oxygenSaturation != null && oxygenSaturation! < 95) return true;
-    if (temperature != null && (temperature! < 97 || temperature! > 99.5))
+    if (temperature != null && (temperature! < 97 || temperature! > 99.5)) {
       return true;
-    if (bloodPressureSystolic != null && bloodPressureSystolic! > 140)
+    }
+    if (bloodPressureSystolic != null && bloodPressureSystolic! > 140) {
       return true;
-    if (bloodPressureDiastolic != null && bloodPressureDiastolic! > 90)
+    }
+    if (bloodPressureDiastolic != null && bloodPressureDiastolic! > 90) {
       return true;
+    }
     return false;
   }
 
@@ -52,33 +55,33 @@ class PatientVitalsFirestore extends Equatable {
 
     // Heart rate scoring
     if (heartRate != null) {
-      if (heartRate! < 50 || heartRate! > 120)
+      if (heartRate! < 50 || heartRate! > 120) {
         score += 2.5;
-      else if (heartRate! < 60 || heartRate! > 100)
+      } else if (heartRate! < 60 || heartRate! > 100)
         score += 1.0;
     }
 
     // Oxygen saturation scoring
     if (oxygenSaturation != null) {
-      if (oxygenSaturation! < 90)
+      if (oxygenSaturation! < 90) {
         score += 3.0;
-      else if (oxygenSaturation! < 95)
+      } else if (oxygenSaturation! < 95)
         score += 1.5;
     }
 
     // Temperature scoring
     if (temperature != null) {
-      if (temperature! > 101.5 || temperature! < 95)
+      if (temperature! > 101.5 || temperature! < 95) {
         score += 2.5;
-      else if (temperature! > 99.5 || temperature! < 97)
+      } else if (temperature! > 99.5 || temperature! < 97)
         score += 1.0;
     }
 
     // Blood pressure scoring
     if (bloodPressureSystolic != null && bloodPressureDiastolic != null) {
-      if (bloodPressureSystolic! > 180 || bloodPressureDiastolic! > 120)
+      if (bloodPressureSystolic! > 180 || bloodPressureDiastolic! > 120) {
         score += 3.0;
-      else if (bloodPressureSystolic! > 140 || bloodPressureDiastolic! > 90)
+      } else if (bloodPressureSystolic! > 140 || bloodPressureDiastolic! > 90)
         score += 1.0;
     }
 

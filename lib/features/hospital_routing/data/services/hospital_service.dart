@@ -279,8 +279,7 @@ class HospitalService {
           patientSatisfaction: 4.3,
           treatmentSuccessRate: 0.89,
           monthlyVolume: 1200,
-        ),
-        fhirEndpoint: 'https://api.riverside.org/fhir/R4',
+        )
       ),
     ];
   }

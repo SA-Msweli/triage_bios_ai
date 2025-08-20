@@ -178,7 +178,7 @@ class LdapSyncService {
         _lastSyncError = result.error;
 
         _logger.e(
-          'LDAP synchronization failed (${_consecutiveFailures}/${_maxConsecutiveFailures}): '
+          'LDAP synchronization failed ($_consecutiveFailures/$_maxConsecutiveFailures): '
           '${result.error}',
         );
 

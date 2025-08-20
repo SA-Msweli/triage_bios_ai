@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/services/fhir_service.dart';
-import '../../../../shared/services/watsonx_service.dart';
 import '../../../../config/app_config.dart';
 
 /// Hospital dashboard for monitoring capacity and patient flow
@@ -12,9 +10,6 @@ class HospitalDashboard extends StatefulWidget {
 }
 
 class _HospitalDashboardState extends State<HospitalDashboard> {
-  final FhirService _fhirService = FhirService();
-  final WatsonxService _watsonxService = WatsonxService();
-
   List<dynamic> _patientQueue = [];
   Map<String, dynamic> _hospitalStats = {};
   bool _isLoading = true;
@@ -32,11 +27,7 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
 
     try {
       // Initialize services
-      _fhirService.initialize();
-      _watsonxService.initialize(
-        apiKey: AppConfig.instance.watsonxApiKey,
-        projectId: AppConfig.instance.watsonxProjectId,
-      );
+      // WatsonxService initialization removed
 
       // Load mock data for demo
       await Future.delayed(const Duration(seconds: 1));
@@ -88,6 +79,8 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
       setState(() {
         _isLoading = false;
       });
+      // Consider logging the error or showing a user-friendly message
+      // print('Error loading dashboard data: $e');
     }
   }
 
