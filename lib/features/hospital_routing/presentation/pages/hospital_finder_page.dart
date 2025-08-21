@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/services/fhir_service.dart';
 import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/constrained_responsive_container.dart';
@@ -15,7 +14,6 @@ class HospitalFinderPage extends StatefulWidget {
 }
 
 class _HospitalFinderPageState extends State<HospitalFinderPage> {
-  final FhirService _fhirService = FhirService();
   final HospitalRoutingService _routingService = HospitalRoutingService();
 
   List<HospitalCapacity> _hospitals = [];
@@ -36,14 +34,13 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
     });
 
     try {
-      _fhirService.initialize();
       await _routingService.initialize();
 
       // Load nearby hospitals (using NYC coordinates as default)
-      final hospitals = await _fhirService.getHospitalCapacities(
+      final hospitals = await _routingService.getNearbyHospitals(
         latitude: 40.7128,
         longitude: -74.0060,
-        radiusKm: 25.0,
+        radiusKm: 50.0,
       );
 
       // Use routing service to optimize hospital order by travel time
@@ -67,7 +64,6 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveBreakpoints.isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
