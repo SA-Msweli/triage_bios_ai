@@ -778,8 +778,8 @@ class DataMigrationService {
       case UrgencyLevel.nonUrgent:
         return 60.0 + _random.nextDouble() * 60.0; // 60-120 minutes
     }
-  }  // 
-============================================================================
+  }
+  //============================================================================
   // DATA VALIDATION AND INTEGRITY
   // ============================================================================
 
@@ -881,42 +881,32 @@ class DataMigrationService {
       _logger.w('Resetting all development data...');
 
       // This is a destructive operation - only for development
-      final batch = _firestoreService._firestore.batch();
+      final batch = _firestoreService.getFirestoreBatch();
 
       // Delete all hospitals
-      final hospitalsQuery = await _firestoreService._firestore
-          .collection('hospitals')
-          .get();
+      final hospitalsQuery = await _firestoreService.getAllDocumentsFromCollection('hospitals');
       for (final doc in hospitalsQuery.docs) {
         batch.delete(doc.reference);
       }
 
       // Delete all capacities
-      final capacitiesQuery = await _firestoreService._firestore
-          .collection('hospital_capacity')
-          .get();
+      final capacitiesQuery = await _firestoreService.getAllDocumentsFromCollection('hospital_capacity');
       for (final doc in capacitiesQuery.docs) {
         batch.delete(doc.reference);
       }
 
       // Delete all patient data
-      final vitalsQuery = await _firestoreService._firestore
-          .collection('patient_vitals')
-          .get();
+      final vitalsQuery = await _firestoreService.getAllDocumentsFromCollection('patient_vitals');
       for (final doc in vitalsQuery.docs) {
         batch.delete(doc.reference);
       }
 
-      final triageQuery = await _firestoreService._firestore
-          .collection('triage_results')
-          .get();
+      final triageQuery = await _firestoreService.getAllDocumentsFromCollection('triage_results');
       for (final doc in triageQuery.docs) {
         batch.delete(doc.reference);
       }
 
-      final consentsQuery = await _firestoreService._firestore
-          .collection('patient_consents')
-          .get();
+      final consentsQuery = await _firestoreService.getAllDocumentsFromCollection('patient_consents');
       for (final doc in consentsQuery.docs) {
         batch.delete(doc.reference);
       }
@@ -966,22 +956,13 @@ class DataMigrationService {
           : 0.0;
 
       // Patient data statistics (sample counts)
-      final vitalsQuery = await _firestoreService._firestore
-          .collection('patient_vitals')
-          .count()
-          .get();
+      final vitalsQuery = await _firestoreService.getCountFromCollection('patient_vitals');
       stats.totalVitalsRecords = vitalsQuery.count ?? 0;
 
-      final triageQuery = await _firestoreService._firestore
-          .collection('triage_results')
-          .count()
-          .get();
+      final triageQuery = await _firestoreService.getCountFromCollection('triage_results');
       stats.totalTriageResults = triageQuery.count ?? 0;
 
-      final consentsQuery = await _firestoreService._firestore
-          .collection('patient_consents')
-          .count()
-          .get();
+      final consentsQuery = await _firestoreService.getCountFromCollection('patient_consents');
       stats.totalConsentRecords = consentsQuery.count ?? 0;
 
       return stats;

@@ -56,7 +56,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => HospitalFirestore.fromFirestore(doc))
+          .map((doc) => HospitalFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get hospitals from Firestore: $e');
@@ -76,7 +76,6 @@ class FirestoreDataService {
     try {
       // Calculate bounding box for initial filtering
       final latRange = radiusKm / 111.0; // Rough conversion: 1 degree ≈ 111 km
-      final lngRange = radiusKm / (111.0 * math.cos(latitude * math.pi / 180));
 
       Query query = _firestore
           .collection(_hospitalsCollection)
@@ -100,7 +99,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       final hospitals = querySnapshot.docs
-          .map((doc) => HospitalFirestore.fromFirestore(doc))
+          .map((doc) => HospitalFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
 
       // Filter by actual distance and sort by proximity
@@ -209,7 +208,7 @@ class FirestoreDataService {
 
       if (querySnapshot.docs.isNotEmpty) {
         return HospitalCapacityFirestore.fromFirestore(
-          querySnapshot.docs.first,
+          querySnapshot.docs.first as DocumentSnapshot<Map<String, dynamic>>,
         );
       }
       return null;
@@ -234,7 +233,7 @@ class FirestoreDataService {
       // Group by hospitalId and get the most recent for each
       final capacityMap = <String, HospitalCapacityFirestore>{};
       for (final doc in querySnapshot.docs) {
-        final capacity = HospitalCapacityFirestore.fromFirestore(doc);
+        final capacity = HospitalCapacityFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
         final existing = capacityMap[capacity.hospitalId];
         if (existing == null ||
             capacity.lastUpdated.isAfter(existing.lastUpdated)) {
@@ -292,7 +291,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       final capacities = querySnapshot.docs
-          .map((doc) => HospitalCapacityFirestore.fromFirestore(doc))
+          .map((doc) => HospitalCapacityFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
 
       // Filter by ICU beds if specified (can't use in compound query)
@@ -328,7 +327,7 @@ class FirestoreDataService {
           // Group by hospitalId and get the most recent for each
           final capacityMap = <String, HospitalCapacityFirestore>{};
           for (final doc in snapshot.docs) {
-            final capacity = HospitalCapacityFirestore.fromFirestore(doc);
+            final capacity = HospitalCapacityFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
             final existing = capacityMap[capacity.hospitalId];
             if (existing == null ||
                 capacity.lastUpdated.isAfter(existing.lastUpdated)) {
@@ -348,7 +347,7 @@ class FirestoreDataService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => HospitalCapacityFirestore.fromFirestore(doc))
+              .map((doc) => HospitalCapacityFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
               .toList(),
         );
   }
@@ -391,7 +390,45 @@ class FirestoreDataService {
   static const String _triageResultsCollection = 'triage_results';
   static const String _consentsCollection = 'patient_consents';
   static const String _deviceDataCollection = 'device_data';
-  static const String _auditLogsCollection = 'audit_logs';
+  
+  // ============================================================================
+  // DATA MIGRATION HELPERS
+  // ============================================================================
+
+  /// Provides a Firestore batch instance for bulk operations.
+  WriteBatch getFirestoreBatch() {
+    return _firestore.batch();
+  }
+
+  /// Retrieves all documents from a specified collection.
+  /// Note: Use with caution on very large collections.
+  Future<QuerySnapshot<Map<String, dynamic>>> getAllDocumentsFromCollection(
+    String collectionPath,
+  ) async {
+    try {
+      final querySnapshot = await _firestore.collection(collectionPath).get();
+      // Assuming the calling service (DataMigrationService) will handle
+      // the specific type of documents (e.g., via fromFirestore methods).
+      return querySnapshot as QuerySnapshot<Map<String, dynamic>>;
+    } catch (e) {
+      _logger.e('Failed to get all documents from $collectionPath: $e');
+      rethrow;
+    }
+  }
+
+  /// Gets the count of documents in a specified collection.
+  Future<AggregateQuerySnapshot> getCountFromCollection(
+    String collectionPath,
+  ) async {
+    try {
+      final countQuery = _firestore.collection(collectionPath).count();
+      final aggregateSnapshot = await countQuery.get();
+      return aggregateSnapshot;
+    } catch (e) {
+      _logger.e('Failed to get count from $collectionPath: $e');
+      rethrow;
+    }
+  }
 
   // ============================================================================
   // PATIENT VITALS MANAGEMENT
@@ -476,7 +513,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
+          .map((doc) => PatientVitalsFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get patient vitals from Firestore: $e');
@@ -532,7 +569,7 @@ class FirestoreDataService {
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
-        return PatientVitalsFirestore.fromFirestore(querySnapshot.docs.first);
+        return PatientVitalsFirestore.fromFirestore(querySnapshot.docs.first as DocumentSnapshot<Map<String, dynamic>>);
       }
       return null;
     } catch (e) {
@@ -560,7 +597,7 @@ class FirestoreDataService {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
+          .map((doc) => PatientVitalsFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e(
@@ -657,7 +694,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => TriageResultFirestore.fromFirestore(doc))
+          .map((doc) => TriageResultFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get triage results from Firestore: $e');
@@ -706,7 +743,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => TriageResultFirestore.fromFirestore(doc))
+          .map((doc) => TriageResultFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get critical triage cases from Firestore: $e');
@@ -738,7 +775,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => TriageResultFirestore.fromFirestore(doc))
+          .map((doc) => TriageResultFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get triage results by hospital from Firestore: $e');
@@ -773,21 +810,6 @@ class FirestoreDataService {
     } catch (e) {
       _logger.e('Failed to store hospital capacity in Firestore: $e');
       rethrow;
-    }
-  }
-
-  /// Get hospital capacity data
-  Future<Map<String, dynamic>?> getHospitalCapacity(String hospitalId) async {
-    try {
-      final doc = await _firestore
-          .collection(_hospitalCapacityCollection)
-          .doc(hospitalId)
-          .get();
-
-      return doc.exists ? doc.data() : null;
-    } catch (e) {
-      _logger.e('Failed to get hospital capacity from Firestore: $e');
-      return null;
     }
   }
 
@@ -851,15 +873,6 @@ class FirestoreDataService {
       return [];
     }
   }
-
-  /// Listen to real-time hospital capacity updates
-  Stream<List<Map<String, dynamic>>> listenToHospitalCapacities() {
-    return _firestore
-        .collection(_hospitalCapacityCollection)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
-  }
-
   // ============================================================================
   // PATIENT CONSENT MANAGEMENT
   // ============================================================================
@@ -893,7 +906,7 @@ class FirestoreDataService {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => PatientConsentFirestore.fromFirestore(doc))
+          .map((doc) => PatientConsentFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get active patient consents from Firestore: $e');
@@ -914,7 +927,7 @@ class FirestoreDataService {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => PatientConsentFirestore.fromFirestore(doc))
+          .map((doc) => PatientConsentFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
     } catch (e) {
       _logger.e('Failed to get consents by provider from Firestore: $e');
@@ -953,7 +966,7 @@ class FirestoreDataService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
+              .map((doc) => PatientVitalsFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
               .toList(),
         );
   }
@@ -997,7 +1010,7 @@ class FirestoreDataService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => TriageResultFirestore.fromFirestore(doc))
+              .map((doc) => TriageResultFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
               .toList(),
         );
   }
@@ -1013,11 +1026,10 @@ class FirestoreDataService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
+              .map((doc) => PatientVitalsFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
               .toList(),
         );
   }
-}
 
   // ============================================================================
   // BATCH OPERATIONS
@@ -1185,7 +1197,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       final capacities = querySnapshot.docs
-          .map((doc) => HospitalCapacityFirestore.fromFirestore(doc))
+          .map((doc) => HospitalCapacityFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
 
       return CapacityAnalytics.fromCapacities(capacities);
@@ -1218,7 +1230,7 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       final results = querySnapshot.docs
-          .map((doc) => TriageResultFirestore.fromFirestore(doc))
+          .map((doc) => TriageResultFirestore.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
           .toList();
 
       return TriageAnalytics.fromResults(results);
@@ -1296,12 +1308,12 @@ class CapacityAnalytics {
   factory CapacityAnalytics.fromCapacities(List<HospitalCapacityFirestore> capacities) {
     if (capacities.isEmpty) return CapacityAnalytics.empty();
 
-    final totalBeds = capacities.fold<int>(0, (sum, c) => sum + c.totalBeds);
-    final totalAvailable = capacities.fold<int>(0, (sum, c) => sum + c.availableBeds);
-    final avgOccupancy = capacities.fold<double>(0, (sum, c) => sum + c.occupancyRate) / capacities.length;
+    final totalBeds = capacities.fold<int>(0, (accumulator, c) => accumulator + c.totalBeds);
+    final totalAvailable = capacities.fold<int>(0, (accumulator, c) => accumulator + c.availableBeds);
+    final avgOccupancy = capacities.fold<double>(0, (accumulator, c) => accumulator + c.occupancyRate) / capacities.length;
     final nearCapacity = capacities.where((c) => c.isNearCapacity).length;
     final atCapacity = capacities.where((c) => c.isAtCapacity).length;
-    final avgWait = capacities.fold<double>(0, (sum, c) => sum + c.averageWaitTime) / capacities.length;
+    final avgWait = capacities.fold<double>(0, (accumulator, c) => accumulator + c.averageWaitTime) / capacities.length;
 
     return CapacityAnalytics(
       totalHospitals: capacities.length,
@@ -1353,8 +1365,8 @@ class TriageAnalytics {
     final urgent = results.where((r) => r.urgencyLevel == UrgencyLevel.urgent).length;
     final standard = results.where((r) => r.urgencyLevel == UrgencyLevel.standard).length;
     final nonUrgent = results.where((r) => r.urgencyLevel == UrgencyLevel.nonUrgent).length;
-    final avgSeverity = results.fold<double>(0, (sum, r) => sum + r.severityScore) / results.length;
-    final avgConfidence = results.fold<double>(0, (sum, r) => sum + r.confidence) / results.length;
+    final avgSeverity = results.fold<double>(0, (currentSum, r) => currentSum + r.severityScore) / results.length;
+    final avgConfidence = results.fold<double>(0, (currentSum, r) => currentSum + r.confidence) / results.length;
 
     return TriageAnalytics(
       totalCases: results.length,

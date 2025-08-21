@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 
 /// Extension to add overflow detection to widgets for debugging
 extension OverflowDetection on Widget {
@@ -44,7 +45,7 @@ class _OverflowDetectionWrapper extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.7),
+                      color: Colors.red.withAlpha((0.7 * 255).round()),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
