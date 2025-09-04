@@ -82,6 +82,22 @@ class ConstrainedResponsiveContainer extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for input field containers
+  factory ConstrainedResponsiveContainer.inputField({
+    required Widget child,
+    double? minWidth,
+    double? minHeight,
+    double? maxHeight, 
+  }) {
+    return ConstrainedResponsiveContainer(
+      minWidth: minWidth ?? 200, 
+      maxWidth: 500,           
+      minHeight: minHeight,
+      maxHeight: maxHeight,
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(

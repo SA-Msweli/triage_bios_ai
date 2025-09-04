@@ -52,7 +52,7 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
       final hospitals = await _firestoreService.getHospitalsInRadius(
         latitude: 40.7128,
         longitude: -74.0060,
-        radiusKm: 25.0,
+        radiusKm: 50.0,
       );
 
       // Convert HospitalFirestore to HospitalCapacity using proper factory method
@@ -108,7 +108,6 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveBreakpoints.isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
