@@ -16,8 +16,7 @@ class AppConstants {
 
   // API Versions
   static const String apiVersion = 'v1';
-  static const String fhirVersion = 'R4';
-  static const String watsonxApiVersion = '2023-05-29';
+  static const String geminiApiVersion = 'v1beta';
 
   // Medical Constants
   static const double maxSeverityScore = 10.0;

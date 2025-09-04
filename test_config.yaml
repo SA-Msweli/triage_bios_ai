@@ -1,0 +1,134 @@
+# Firebase Data Integration Test Configuration
+
+# Test Environment Settings
+test_environment:
+  firebase_project_id: "triage-bios-ai-test"
+  firestore_emulator: false # Set to true for local emulator testing
+  auth_emulator: false
+
+# Performance Thresholds (milliseconds)
+performance_thresholds:
+  query_timeout: 5000
+  batch_operation_timeout: 10000
+  realtime_listener_setup: 2000
+  large_dataset_query: 8000
+
+# Test Data Configuration
+test_data:
+  hospital_count: 25
+  vitals_per_patient: 10
+  triage_results_per_patient: 5
+  consent_records_per_patient: 3
+  batch_size: 20
+
+# Test Coverage Requirements
+coverage_requirements:
+  unit_tests: 90
+  integration_tests: 85
+  performance_tests: 80
+
+# Test Categories
+test_categories:
+  unit:
+    - firestore_data_service
+    - enhanced_firestore_data_service
+    - data_migration_service
+
+  integration:
+    - end_to_end_data_flow
+    - real_time_listeners
+    - hospital_routing
+    - data_migration
+
+  performance:
+    - query_performance
+    - batch_operations
+    - real_time_performance
+    - large_dataset_handling
+
+  validation:
+    - data_integrity
+    - migration_integrity
+    - cross_platform_consistency
+
+# Mock Data Settings
+mock_data:
+  cities:
+    - name: "New York"
+      latitude: 40.7589
+      longitude: -73.9851
+      hospitals: 5
+    - name: "Los Angeles"
+      latitude: 34.0522
+      longitude: -118.2437
+      hospitals: 4
+    - name: "Chicago"
+      latitude: 41.8781
+      longitude: -87.6298
+      hospitals: 3
+    - name: "Houston"
+      latitude: 29.7604
+      longitude: -95.3698
+      hospitals: 3
+    - name: "Phoenix"
+      latitude: 33.4484
+      longitude: -112.0740
+      hospitals: 2
+
+  specializations:
+    - emergency
+    - cardiology
+    - neurology
+    - trauma
+    - pediatrics
+    - oncology
+    - orthopedics
+    - psychiatry
+
+  certifications:
+    - "Joint Commission"
+    - "Magnet Recognition"
+    - "Trauma Center Level I"
+    - "Trauma Center Level II"
+    - "Cardiac Specialty"
+    - "Stroke Center"
+
+# Test Execution Settings
+execution:
+  parallel_tests: true
+  max_concurrent: 4
+  retry_attempts: 3
+  cleanup_after_tests: true
+
+# Reporting Configuration
+reporting:
+  generate_coverage_report: true
+  generate_performance_report: true
+  export_test_results: true
+  output_format: "json"
+
+# Security Test Settings
+security:
+  test_authentication: true
+  test_authorization: true
+  test_data_encryption: true
+  test_audit_logging: true
+
+# Offline Testing
+offline_testing:
+  simulate_network_failures: true
+  test_cache_behavior: true
+  test_sync_conflicts: true
+
+# Integration Test Settings
+integration:
+  use_real_firebase: true
+  cleanup_test_data: true
+  test_data_isolation: true
+
+# Performance Test Settings
+performance:
+  warmup_iterations: 3
+  test_iterations: 10
+  memory_monitoring: true
+  cpu_monitoring: false

@@ -29,6 +29,32 @@ class Hospital extends Equatable {
     required this.performance,
   });
 
+  /// Create Hospital from HospitalCapacity
+  factory Hospital.fromHospitalCapacity(HospitalCapacity hospitalCapacity) {
+    return Hospital(
+      id: hospitalCapacity.id,
+      name: hospitalCapacity.name,
+      latitude: hospitalCapacity.latitude ?? 0.0,
+      longitude: hospitalCapacity.longitude ?? 0.0,
+      address:
+          'Address for ${hospitalCapacity.name}', // Would need to fetch from hospital data
+      phoneNumber: '(555) 123-4567', // Would need to fetch from hospital data
+      traumaLevel: 2, // Default trauma level
+      specializations: [
+        'Emergency Medicine',
+        'Internal Medicine',
+      ], // Default specializations
+      certifications: ['Joint Commission'], // Default certifications
+      capacity: hospitalCapacity,
+      performance: HospitalPerformance(
+        averageWaitTime: hospitalCapacity.averageWaitTime,
+        patientSatisfaction: 4.2, // Default satisfaction
+        treatmentSuccessRate: 0.92, // Default success rate
+        monthlyVolume: 1500, // Default monthly volume
+      ),
+    );
+  }
+
   double distanceFrom(double lat, double lng) {
     // Haversine formula for distance calculation
     const double earthRadius = 3959; // miles

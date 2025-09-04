@@ -9,8 +9,8 @@ import 'auth_service.dart';
 
 /// Single Sign-On service supporting SAML 2.0 and OAuth2/OpenID Connect
 class SsoService extends IntegratedAuthService {
-  static final SsoService _instance = SsoService._internal();
-  factory SsoService() => _instance;
+  static SsoService? _instance;
+  factory SsoService() => _instance ??= SsoService._internal();
   SsoService._internal() : super();
 
   final Logger _logger = Logger();

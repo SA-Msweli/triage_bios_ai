@@ -2,7 +2,7 @@
 
 ## System Architecture Overview
 
-Triage-BIOS.ai follows a clean, layered architecture designed for scalability, testability, and maintainability. The system is built using Flutter for cross-platform compatibility and integrates with IBM watsonx.ai for AI-powered triage decisions.
+Triage-BIOS.ai follows a clean, layered architecture designed for scalability, testability, and maintainability. The system is built using Flutter for cross-platform compatibility and integrates with Google Gemini AI for AI-powered triage decisions.
 
 ## Architecture Diagram
 
@@ -28,15 +28,15 @@ graph TB
     end
     
     subgraph "Data Sources"
-        WS[Watsonx Service]
+        GS[Gemini Service]
         AH[Apple Health]
         GF[Google Fit]
-        FHIR[FHIR APIs]
+        CAPI[Custom APIs]
         DB[(SQLite Database)]
     end
     
     subgraph "External Services"
-        WX[IBM watsonx.ai]
+        GM[Google Gemini AI]
         GM[Google Maps]
         FCM[Firebase Cloud Messaging]
     end
@@ -52,7 +52,7 @@ graph TB
     TR --> WS
     HR --> AH
     HR --> GF
-    RR --> FHIR
+    RR --> CAPI
     
     WS --> WX
     RS --> GM
@@ -113,16 +113,16 @@ graph TB
 sequenceDiagram
     participant Patient
     participant TriageService
-    participant WatsonxService
+    participant GeminiService
     participant HealthService
     participant Database
     
     Patient->>TriageService: Submit symptoms
     TriageService->>HealthService: Get latest vitals
     HealthService-->>TriageService: Return vitals data
-    TriageService->>WatsonxService: Analyze symptoms + vitals
-    WatsonxService->>WatsonxService: AI processing
-    WatsonxService-->>TriageService: Return assessment
+    TriageService->>GeminiService: Analyze symptoms + vitals
+    GeminiService->>GeminiService: AI processing
+    GeminiService-->>TriageService: Return assessment
     TriageService->>Database: Store result
     TriageService-->>Patient: Return triage result
 ```
@@ -360,7 +360,7 @@ graph TB
     end
     
     subgraph "External Services"
-        WX[watsonx.ai]
+        GM[Gemini AI]
         HEALTH[Health APIs]
     end
     
@@ -394,7 +394,7 @@ graph LR
     end
     
     subgraph "Data Sources"
-        WX[watsonx.ai API]
+        GM[Gemini AI API]
         HEALTH[Health APIs]
         DB[Database]
     end
@@ -402,7 +402,7 @@ graph LR
     APP[Application] --> L1
     L1 -->|Miss| L2
     L2 -->|Miss| L3
-    L3 -->|Miss| WX
+    L3 -->|Miss| GM
     L3 -->|Miss| HEALTH
     L3 -->|Miss| DB
     
@@ -441,8 +441,7 @@ graph TB
         end
         
         subgraph "AI Services"
-            WX[watsonx.ai]
-            WD[watsonx.data]
+            GM[Gemini AI]
         end
         
         subgraph "Data Services"

@@ -10,7 +10,8 @@ import 'dart:math' as math;
 
 /// Service for migrating data from mock sources to Firestore and seeding realistic data
 class DataMigrationService {
-  static final DataMigrationService _instance = DataMigrationService._internal();
+  static final DataMigrationService _instance =
+      DataMigrationService._internal();
   factory DataMigrationService() => _instance;
   DataMigrationService._internal();
 
@@ -35,11 +36,11 @@ class DataMigrationService {
       for (final hospital in hospitals) {
         try {
           final hospitalId = await _firestoreService.createHospital(hospital);
-          
+
           // Generate realistic capacity data for this hospital
           final capacity = _generateHospitalCapacity(hospitalId, hospital);
           capacities.add(capacity);
-          
+
           _logger.d('Created hospital: ${hospital.name} (ID: $hospitalId)');
         } catch (e) {
           _logger.w('Failed to create hospital ${hospital.name}: $e');
@@ -51,7 +52,9 @@ class DataMigrationService {
         await _firestoreService.batchUpdateCapacities(capacities);
       }
 
-      _logger.i('Hospital data seeding completed: ${hospitals.length} hospitals created');
+      _logger.i(
+        'Hospital data seeding completed: ${hospitals.length} hospitals created',
+      );
     } catch (e) {
       _logger.e('Failed to seed hospital data: $e');
       rethrow;
@@ -75,14 +78,23 @@ class DataMigrationService {
           zipCode: '10065',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 40.7648, longitude: -73.9540),
+        location: const HospitalLocation(
+          latitude: 40.7648,
+          longitude: -73.9540,
+        ),
         contact: const HospitalContact(
           phone: '(212) 746-5454',
           email: 'info@nyp.org',
           website: 'https://www.nyp.org',
         ),
         traumaLevel: 1,
-        specializations: ['emergency', 'cardiology', 'neurology', 'oncology', 'trauma'],
+        specializations: [
+          'emergency',
+          'cardiology',
+          'neurology',
+          'oncology',
+          'trauma',
+        ],
         certifications: ['Joint Commission', 'Magnet', 'Trauma Center Level I'],
         operatingHours: const HospitalOperatingHours(
           emergency: '24/7',
@@ -102,14 +114,22 @@ class DataMigrationService {
           zipCode: '10029',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 40.7903, longitude: -73.9505),
+        location: const HospitalLocation(
+          latitude: 40.7903,
+          longitude: -73.9505,
+        ),
         contact: const HospitalContact(
           phone: '(212) 241-6500',
           email: 'info@mountsinai.org',
           website: 'https://www.mountsinai.org',
         ),
         traumaLevel: 1,
-        specializations: ['emergency', 'cardiology', 'orthopedics', 'pediatrics'],
+        specializations: [
+          'emergency',
+          'cardiology',
+          'orthopedics',
+          'pediatrics',
+        ],
         certifications: ['Joint Commission', 'Magnet'],
         operatingHours: const HospitalOperatingHours(
           emergency: '24/7',
@@ -133,15 +153,27 @@ class DataMigrationService {
           zipCode: '90048',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 34.0759, longitude: -118.3772),
+        location: const HospitalLocation(
+          latitude: 34.0759,
+          longitude: -118.3772,
+        ),
         contact: const HospitalContact(
           phone: '(310) 423-3277',
           email: 'info@cshs.org',
           website: 'https://www.cedars-sinai.org',
         ),
         traumaLevel: 1,
-        specializations: ['emergency', 'cardiology', 'oncology', 'neurosurgery'],
-        certifications: ['Joint Commission', 'Magnet', 'Comprehensive Cancer Center'],
+        specializations: [
+          'emergency',
+          'cardiology',
+          'oncology',
+          'neurosurgery',
+        ],
+        certifications: [
+          'Joint Commission',
+          'Magnet',
+          'Comprehensive Cancer Center',
+        ],
         operatingHours: const HospitalOperatingHours(
           emergency: '24/7',
           general: 'Mon-Sun 6:00 AM - 9:00 PM',
@@ -160,7 +192,10 @@ class DataMigrationService {
           zipCode: '90095',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 34.0689, longitude: -118.4452),
+        location: const HospitalLocation(
+          latitude: 34.0689,
+          longitude: -118.4452,
+        ),
         contact: const HospitalContact(
           phone: '(310) 825-9111',
           email: 'info@ucla.edu',
@@ -191,7 +226,10 @@ class DataMigrationService {
           zipCode: '60611',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 41.8955, longitude: -87.6214),
+        location: const HospitalLocation(
+          latitude: 41.8955,
+          longitude: -87.6214,
+        ),
         contact: const HospitalContact(
           phone: '(312) 926-2000',
           email: 'info@nm.org',
@@ -199,7 +237,11 @@ class DataMigrationService {
         ),
         traumaLevel: 1,
         specializations: ['emergency', 'cardiology', 'neurology', 'transplant'],
-        certifications: ['Joint Commission', 'Magnet', 'Comprehensive Stroke Center'],
+        certifications: [
+          'Joint Commission',
+          'Magnet',
+          'Comprehensive Stroke Center',
+        ],
         operatingHours: const HospitalOperatingHours(
           emergency: '24/7',
           general: 'Mon-Sun 6:00 AM - 10:00 PM',
@@ -222,7 +264,10 @@ class DataMigrationService {
           zipCode: '77030',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 29.7097, longitude: -95.3967),
+        location: const HospitalLocation(
+          latitude: 29.7097,
+          longitude: -95.3967,
+        ),
         contact: const HospitalContact(
           phone: '(713) 790-3311',
           email: 'info@houstonmethodist.org',
@@ -253,7 +298,10 @@ class DataMigrationService {
           zipCode: '33136',
           country: 'USA',
         ),
-        location: const HospitalLocation(latitude: 25.7867, longitude: -80.2109),
+        location: const HospitalLocation(
+          latitude: 25.7867,
+          longitude: -80.2109,
+        ),
         contact: const HospitalContact(
           phone: '(305) 585-1111',
           email: 'info@jhsmiami.org',
@@ -261,7 +309,11 @@ class DataMigrationService {
         ),
         traumaLevel: 1,
         specializations: ['emergency', 'trauma', 'burn', 'pediatrics'],
-        certifications: ['Joint Commission', 'Trauma Center Level I', 'Burn Center'],
+        certifications: [
+          'Joint Commission',
+          'Trauma Center Level I',
+          'Burn Center',
+        ],
         operatingHours: const HospitalOperatingHours(
           emergency: '24/7',
           general: 'Mon-Sun 6:00 AM - 10:00 PM',
@@ -291,7 +343,11 @@ class DataMigrationService {
         'lat': 40.7831,
         'lng': -73.9712,
         'traumaLevel': 3,
-        'specializations': ['emergency', 'family medicine', 'internal medicine'],
+        'specializations': [
+          'emergency',
+          'family medicine',
+          'internal medicine',
+        ],
       },
       {
         'name': 'Westside Medical Center',
@@ -323,43 +379,51 @@ class DataMigrationService {
     ];
 
     for (final hospitalData in communityHospitals) {
-      hospitals.add(HospitalFirestore(
-        id: _uuid.v4(),
-        name: hospitalData['name'] as String,
-        address: HospitalAddress(
-          street: '${_random.nextInt(9999) + 1} Medical Center Dr',
-          city: hospitalData['city'] as String,
-          state: hospitalData['state'] as String,
-          zipCode: '${_random.nextInt(90000) + 10000}',
-          country: 'USA',
+      hospitals.add(
+        HospitalFirestore(
+          id: _uuid.v4(),
+          name: hospitalData['name'] as String,
+          address: HospitalAddress(
+            street: '${_random.nextInt(9999) + 1} Medical Center Dr',
+            city: hospitalData['city'] as String,
+            state: hospitalData['state'] as String,
+            zipCode: '${_random.nextInt(90000) + 10000}',
+            country: 'USA',
+          ),
+          location: HospitalLocation(
+            latitude: hospitalData['lat'] as double,
+            longitude: hospitalData['lng'] as double,
+          ),
+          contact: HospitalContact(
+            phone:
+                '(${_random.nextInt(900) + 100}) ${_random.nextInt(900) + 100}-${_random.nextInt(9000) + 1000}',
+            email:
+                'info@${hospitalData['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
+            website:
+                'https://www.${hospitalData['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
+          ),
+          traumaLevel: hospitalData['traumaLevel'] as int,
+          specializations: hospitalData['specializations'] as List<String>,
+          certifications: ['Joint Commission'],
+          operatingHours: const HospitalOperatingHours(
+            emergency: '24/7',
+            general: 'Mon-Sun 6:00 AM - 10:00 PM',
+          ),
+          createdAt: now,
+          updatedAt: now,
+          isActive: true,
         ),
-        location: HospitalLocation(
-          latitude: hospitalData['lat'] as double,
-          longitude: hospitalData['lng'] as double,
-        ),
-        contact: HospitalContact(
-          phone: '(${_random.nextInt(900) + 100}) ${_random.nextInt(900) + 100}-${_random.nextInt(9000) + 1000}',
-          email: 'info@${hospitalData['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
-          website: 'https://www.${hospitalData['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
-        ),
-        traumaLevel: hospitalData['traumaLevel'] as int,
-        specializations: hospitalData['specializations'] as List<String>,
-        certifications: ['Joint Commission'],
-        operatingHours: const HospitalOperatingHours(
-          emergency: '24/7',
-          general: 'Mon-Sun 6:00 AM - 10:00 PM',
-        ),
-        createdAt: now,
-        updatedAt: now,
-        isActive: true,
-      ));
+      );
     }
 
     return hospitals;
   }
 
   /// Generate realistic capacity data for a hospital
-  HospitalCapacityFirestore _generateHospitalCapacity(String hospitalId, HospitalFirestore hospital) {
+  HospitalCapacityFirestore _generateHospitalCapacity(
+    String hospitalId,
+    HospitalFirestore hospital,
+  ) {
     // Base capacity on trauma level and specializations
     int baseBeds;
     switch (hospital.traumaLevel) {
@@ -377,20 +441,26 @@ class DataMigrationService {
     }
 
     final totalBeds = baseBeds;
-    final occupancyRate = 0.65 + (_random.nextDouble() * 0.25); // 65-90% occupancy
+    final occupancyRate =
+        0.65 + (_random.nextDouble() * 0.25); // 65-90% occupancy
     final availableBeds = (totalBeds * (1 - occupancyRate)).round();
-    
-    final icuBeds = (totalBeds * 0.1).round(); // 10% ICU beds
-    final icuOccupancyRate = 0.7 + (_random.nextDouble() * 0.25); // 70-95% ICU occupancy
-    final icuAvailable = (icuBeds * (1 - icuOccupancyRate)).round();
-    
-    final emergencyBeds = (totalBeds * 0.15).round(); // 15% emergency beds
-    final emergencyOccupancyRate = 0.6 + (_random.nextDouble() * 0.3); // 60-90% emergency occupancy
-    final emergencyAvailable = (emergencyBeds * (1 - emergencyOccupancyRate)).round();
 
-    final staffOnDuty = (totalBeds * 0.8).round() + _random.nextInt(20); // ~0.8 staff per bed
+    final icuBeds = (totalBeds * 0.1).round(); // 10% ICU beds
+    final icuOccupancyRate =
+        0.7 + (_random.nextDouble() * 0.25); // 70-95% ICU occupancy
+    final icuAvailable = (icuBeds * (1 - icuOccupancyRate)).round();
+
+    final emergencyBeds = (totalBeds * 0.15).round(); // 15% emergency beds
+    final emergencyOccupancyRate =
+        0.6 + (_random.nextDouble() * 0.3); // 60-90% emergency occupancy
+    final emergencyAvailable = (emergencyBeds * (1 - emergencyOccupancyRate))
+        .round();
+
+    final staffOnDuty =
+        (totalBeds * 0.8).round() + _random.nextInt(20); // ~0.8 staff per bed
     final patientsInQueue = _random.nextInt(15); // 0-15 patients in queue
-    final averageWaitTime = 15.0 + (_random.nextDouble() * 45.0); // 15-60 minutes
+    final averageWaitTime =
+        15.0 + (_random.nextDouble() * 45.0); // 15-60 minutes
 
     return HospitalCapacityFirestore(
       id: _uuid.v4(),
@@ -404,13 +474,15 @@ class DataMigrationService {
       staffOnDuty: staffOnDuty,
       patientsInQueue: patientsInQueue,
       averageWaitTime: averageWaitTime,
-      lastUpdated: DateTime.now().subtract(Duration(minutes: _random.nextInt(10))),
+      lastUpdated: DateTime.now().subtract(
+        Duration(minutes: _random.nextInt(10)),
+      ),
       dataSource: DataSource.firestore,
       isRealTime: _random.nextBool(),
     );
   }
- 
- // ============================================================================
+
+  // ============================================================================
   // MOCK DATA MIGRATION
   // ============================================================================
 
@@ -421,24 +493,29 @@ class DataMigrationService {
 
       // Get existing mock hospitals from the old service
       final mockHospitals = _getMockHospitalsFromOldService();
-      
+
       for (final mockHospital in mockHospitals) {
         try {
           // Convert mock hospital to Firestore format
           final hospital = _convertMockHospitalToFirestore(mockHospital);
           final hospitalId = await _firestoreService.createHospital(hospital);
-          
+
           // Convert and create capacity data
-          final capacity = _convertMockCapacityToFirestore(hospitalId, mockHospital);
+          final capacity = _convertMockCapacityToFirestore(
+            hospitalId,
+            mockHospital,
+          );
           await _firestoreService.updateHospitalCapacity(capacity);
-          
+
           _logger.d('Migrated hospital: ${hospital.name}');
         } catch (e) {
           _logger.w('Failed to migrate hospital: $e');
         }
       }
 
-      _logger.i('Mock data migration completed: ${mockHospitals.length} hospitals migrated');
+      _logger.i(
+        'Mock data migration completed: ${mockHospitals.length} hospitals migrated',
+      );
     } catch (e) {
       _logger.e('Failed to migrate mock data: $e');
       rethrow;
@@ -448,7 +525,7 @@ class DataMigrationService {
   /// Get mock hospitals from the old HospitalService format
   List<Map<String, dynamic>> _getMockHospitalsFromOldService() {
     final now = DateTime.now();
-    
+
     return [
       {
         'id': 'hosp_001',
@@ -459,7 +536,11 @@ class DataMigrationService {
         'phoneNumber': '(555) 123-4567',
         'traumaLevel': 1,
         'specializations': ['emergency', 'cardiology', 'trauma', 'neurology'],
-        'certifications': ['Joint Commission', 'Magnet', 'Trauma Center Level I'],
+        'certifications': [
+          'Joint Commission',
+          'Magnet',
+          'Trauma Center Level I',
+        ],
         'totalBeds': 450,
         'availableBeds': 23,
         'icuBeds': 8,
@@ -509,7 +590,12 @@ class DataMigrationService {
         'address': '321 University Way, New York, NY 10004',
         'phoneNumber': '(555) 456-7890',
         'traumaLevel': 1,
-        'specializations': ['emergency', 'research', 'oncology', 'neurosurgery'],
+        'specializations': [
+          'emergency',
+          'research',
+          'oncology',
+          'neurosurgery',
+        ],
         'certifications': ['Joint Commission', 'Magnet', 'NCI Cancer Center'],
         'totalBeds': 520,
         'availableBeds': 67,
@@ -526,7 +612,11 @@ class DataMigrationService {
         'address': '654 Riverside Dr, New York, NY 10005',
         'phoneNumber': '(555) 567-8901',
         'traumaLevel': 3,
-        'specializations': ['emergency', 'family medicine', 'internal medicine'],
+        'specializations': [
+          'emergency',
+          'family medicine',
+          'internal medicine',
+        ],
         'certifications': ['Joint Commission'],
         'totalBeds': 180,
         'availableBeds': 32,
@@ -539,10 +629,12 @@ class DataMigrationService {
   }
 
   /// Convert mock hospital data to Firestore format
-  HospitalFirestore _convertMockHospitalToFirestore(Map<String, dynamic> mockHospital) {
+  HospitalFirestore _convertMockHospitalToFirestore(
+    Map<String, dynamic> mockHospital,
+  ) {
     final now = DateTime.now();
     final addressParts = (mockHospital['address'] as String).split(', ');
-    
+
     return HospitalFirestore(
       id: mockHospital['id'] as String,
       name: mockHospital['name'] as String,
@@ -550,7 +642,9 @@ class DataMigrationService {
         street: addressParts.isNotEmpty ? addressParts[0] : 'Unknown Street',
         city: addressParts.length > 1 ? addressParts[1] : 'Unknown City',
         state: addressParts.length > 2 ? addressParts[2].split(' ')[0] : 'NY',
-        zipCode: addressParts.length > 2 ? addressParts[2].split(' ').last : '10001',
+        zipCode: addressParts.length > 2
+            ? addressParts[2].split(' ').last
+            : '10001',
         country: 'USA',
       ),
       location: HospitalLocation(
@@ -559,11 +653,15 @@ class DataMigrationService {
       ),
       contact: HospitalContact(
         phone: mockHospital['phoneNumber'] as String,
-        email: 'info@${mockHospital['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
-        website: 'https://www.${mockHospital['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
+        email:
+            'info@${mockHospital['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
+        website:
+            'https://www.${mockHospital['name'].toString().toLowerCase().replaceAll(' ', '').replaceAll('\'', '')}.org',
       ),
       traumaLevel: mockHospital['traumaLevel'] as int,
-      specializations: List<String>.from(mockHospital['specializations'] as List),
+      specializations: List<String>.from(
+        mockHospital['specializations'] as List,
+      ),
       certifications: List<String>.from(mockHospital['certifications'] as List),
       operatingHours: const HospitalOperatingHours(
         emergency: '24/7',
@@ -585,11 +683,11 @@ class DataMigrationService {
     final icuBeds = mockHospital['icuBeds'] as int;
     final emergencyBeds = mockHospital['emergencyBeds'] as int;
     final staffOnDuty = mockHospital['staffOnDuty'] as int;
-    
+
     // Calculate ICU and emergency availability (assume 70% occupancy)
     final icuAvailable = (icuBeds * 0.3).round();
     final emergencyAvailable = (emergencyBeds * 0.3).round();
-    
+
     return HospitalCapacityFirestore(
       id: _uuid.v4(),
       hospitalId: hospitalId,
@@ -623,27 +721,29 @@ class DataMigrationService {
 
       for (int i = 0; i < patientCount; i++) {
         final patientId = 'patient_${_uuid.v4()}';
-        
+
         // Generate vitals history
         for (int j = 0; j < vitalsPerPatient; j++) {
           final vitals = _generateSampleVitals(patientId, j);
           await _firestoreService.storePatientVitals(vitals);
         }
-        
+
         // Generate triage results
         for (int k = 0; k < triageResultsPerPatient; k++) {
           final result = _generateSampleTriageResult(patientId, k);
           await _firestoreService.storeTriageResult(result);
         }
-        
+
         // Generate consent record
         final consent = _generateSampleConsent(patientId);
         await _firestoreService.storePatientConsent(consent);
-        
+
         _logger.d('Generated data for patient: $patientId');
       }
 
-      _logger.i('Sample patient data generation completed: $patientCount patients');
+      _logger.i(
+        'Sample patient data generation completed: $patientCount patients',
+      );
     } catch (e) {
       _logger.e('Failed to generate sample patient data: $e');
       rethrow;
@@ -653,7 +753,7 @@ class DataMigrationService {
   /// Generate realistic patient vitals
   PatientVitalsFirestore _generateSampleVitals(String patientId, int index) {
     final baseTime = DateTime.now().subtract(Duration(hours: index * 2));
-    
+
     // Generate realistic vitals with some variation
     final heartRate = 60.0 + _random.nextDouble() * 40.0; // 60-100 bpm
     final systolic = 110.0 + _random.nextDouble() * 30.0; // 110-140 mmHg
@@ -661,19 +761,29 @@ class DataMigrationService {
     final oxygenSat = 95.0 + _random.nextDouble() * 5.0; // 95-100%
     final temperature = 97.0 + _random.nextDouble() * 3.0; // 97-100°F
     final respiratory = 12.0 + _random.nextDouble() * 8.0; // 12-20 breaths/min
-    
+
     // Occasionally generate abnormal vitals
     final isAbnormal = _random.nextDouble() < 0.2; // 20% chance
-    
+
     return PatientVitalsFirestore(
       id: _uuid.v4(),
       patientId: patientId,
       deviceId: _random.nextBool() ? 'device_${_random.nextInt(1000)}' : null,
-      heartRate: isAbnormal && _random.nextBool() ? (heartRate + 40) : heartRate,
-      bloodPressureSystolic: isAbnormal && _random.nextBool() ? (systolic + 30) : systolic,
-      bloodPressureDiastolic: isAbnormal && _random.nextBool() ? (diastolic + 20) : diastolic,
-      oxygenSaturation: isAbnormal && _random.nextBool() ? (oxygenSat - 10) : oxygenSat,
-      temperature: isAbnormal && _random.nextBool() ? (temperature + 3) : temperature,
+      heartRate: isAbnormal && _random.nextBool()
+          ? (heartRate + 40)
+          : heartRate,
+      bloodPressureSystolic: isAbnormal && _random.nextBool()
+          ? (systolic + 30)
+          : systolic,
+      bloodPressureDiastolic: isAbnormal && _random.nextBool()
+          ? (diastolic + 20)
+          : diastolic,
+      oxygenSaturation: isAbnormal && _random.nextBool()
+          ? (oxygenSat - 10)
+          : oxygenSat,
+      temperature: isAbnormal && _random.nextBool()
+          ? (temperature + 3)
+          : temperature,
       respiratoryRate: respiratory,
       source: VitalsSource.values[_random.nextInt(VitalsSource.values.length)],
       accuracy: 0.85 + _random.nextDouble() * 0.15, // 85-100% accuracy
@@ -683,7 +793,10 @@ class DataMigrationService {
   }
 
   /// Generate sample triage result
-  TriageResultFirestore _generateSampleTriageResult(String patientId, int index) {
+  TriageResultFirestore _generateSampleTriageResult(
+    String patientId,
+    int index,
+  ) {
     final symptoms = [
       'Chest pain and shortness of breath',
       'Severe headache and dizziness',
@@ -691,10 +804,10 @@ class DataMigrationService {
       'Fever and body aches',
       'Back pain and muscle spasms',
     ];
-    
+
     final urgencyLevels = UrgencyLevel.values;
     final urgencyLevel = urgencyLevels[_random.nextInt(urgencyLevels.length)];
-    
+
     double severityScore;
     switch (urgencyLevel) {
       case UrgencyLevel.critical:
@@ -710,7 +823,7 @@ class DataMigrationService {
         severityScore = 1.0 + _random.nextDouble() * 3.0; // 1-4
         break;
     }
-    
+
     return TriageResultFirestore(
       id: _uuid.v4(),
       patientId: patientId,
@@ -718,13 +831,14 @@ class DataMigrationService {
       symptoms: symptoms[_random.nextInt(symptoms.length)],
       severityScore: severityScore,
       urgencyLevel: urgencyLevel,
-      aiReasoning: 'AI assessment based on symptoms and vitals analysis. ${urgencyLevel.displayName} priority assigned.',
+      aiReasoning:
+          'AI assessment based on symptoms and vitals analysis. ${urgencyLevel.displayName} priority assigned.',
       recommendedActions: _getRecommendedActions(urgencyLevel),
       vitalsContribution: _random.nextDouble() * 3.0, // 0-3 points from vitals
       confidence: 0.7 + _random.nextDouble() * 0.3, // 70-100% confidence
       estimatedWaitTime: _getEstimatedWaitTime(urgencyLevel),
       createdAt: DateTime.now().subtract(Duration(hours: index * 6)),
-      watsonxModelVersion: 'granite-3-8b-instruct-v1.0',
+      geminiModelVersion: 'gemini-1.5-flash',
     );
   }
 
@@ -732,7 +846,7 @@ class DataMigrationService {
   PatientConsentFirestore _generateSampleConsent(String patientId) {
     final consentTypes = ConsentType.values;
     final consentType = consentTypes[_random.nextInt(consentTypes.length)];
-    
+
     return PatientConsentFirestore(
       id: _uuid.v4(),
       patientId: patientId,
@@ -742,7 +856,8 @@ class DataMigrationService {
       grantedAt: DateTime.now().subtract(Duration(days: _random.nextInt(30))),
       expiresAt: DateTime.now().add(Duration(days: 365)), // 1 year
       isActive: true,
-      blockchainTxId: 'tx_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(10000)}',
+      blockchainTxId:
+          'tx_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(10000)}',
       ipAddress: '192.168.1.${_random.nextInt(255)}',
       consentDetails: {
         'grantedBy': patientId,
@@ -756,13 +871,29 @@ class DataMigrationService {
   List<String> _getRecommendedActions(UrgencyLevel urgencyLevel) {
     switch (urgencyLevel) {
       case UrgencyLevel.critical:
-        return ['Call 911 immediately', 'Do not drive yourself', 'Prepare medical history'];
+        return [
+          'Call 911 immediately',
+          'Do not drive yourself',
+          'Prepare medical history',
+        ];
       case UrgencyLevel.urgent:
-        return ['Seek emergency care within 1 hour', 'Monitor symptoms closely', 'Have someone drive you'];
+        return [
+          'Seek emergency care within 1 hour',
+          'Monitor symptoms closely',
+          'Have someone drive you',
+        ];
       case UrgencyLevel.standard:
-        return ['Visit emergency room when convenient', 'Monitor symptoms', 'Consider urgent care'];
+        return [
+          'Visit emergency room when convenient',
+          'Monitor symptoms',
+          'Consider urgent care',
+        ];
       case UrgencyLevel.nonUrgent:
-        return ['Schedule appointment with primary care', 'Monitor symptoms', 'Rest and hydrate'];
+        return [
+          'Schedule appointment with primary care',
+          'Monitor symptoms',
+          'Rest and hydrate',
+        ];
     }
   }
 
@@ -793,17 +924,24 @@ class DataMigrationService {
       // Validate hospitals
       final hospitals = await _firestoreService.getHospitals(limit: 1000);
       result.hospitalCount = hospitals.length;
-      result.hospitalsValid = hospitals.where((h) => _validateHospital(h)).length;
+      result.hospitalsValid = hospitals
+          .where((h) => _validateHospital(h))
+          .length;
 
       // Validate hospital capacities
       final hospitalIds = hospitals.map((h) => h.id).toList();
-      final capacities = await _firestoreService.getHospitalCapacities(hospitalIds);
+      final capacities = await _firestoreService.getHospitalCapacities(
+        hospitalIds,
+      );
       result.capacityCount = capacities.length;
-      result.capacitiesValid = capacities.where((c) => _validateCapacity(c)).length;
+      result.capacitiesValid = capacities
+          .where((c) => _validateCapacity(c))
+          .length;
 
       // Check for orphaned capacities (capacities without hospitals)
-      final orphanedCapacities = capacities.where((c) => 
-          !hospitalIds.contains(c.hospitalId)).length;
+      final orphanedCapacities = capacities
+          .where((c) => !hospitalIds.contains(c.hospitalId))
+          .length;
       result.orphanedCapacities = orphanedCapacities;
 
       // Validate data freshness
@@ -811,14 +949,23 @@ class DataMigrationService {
       result.staleCapacities = staleCapacities;
 
       // Calculate validation scores
-      result.hospitalValidationScore = result.hospitalsValid / result.hospitalCount;
-      result.capacityValidationScore = result.capacitiesValid / result.capacityCount;
-      result.overallScore = (result.hospitalValidationScore + result.capacityValidationScore) / 2;
+      result.hospitalValidationScore =
+          result.hospitalsValid / result.hospitalCount;
+      result.capacityValidationScore =
+          result.capacitiesValid / result.capacityCount;
+      result.overallScore =
+          (result.hospitalValidationScore + result.capacityValidationScore) / 2;
 
       _logger.i('Data integrity validation completed');
-      _logger.i('Hospitals: ${result.hospitalsValid}/${result.hospitalCount} valid');
-      _logger.i('Capacities: ${result.capacitiesValid}/${result.capacityCount} valid');
-      _logger.i('Overall score: ${(result.overallScore * 100).toStringAsFixed(1)}%');
+      _logger.i(
+        'Hospitals: ${result.hospitalsValid}/${result.hospitalCount} valid',
+      );
+      _logger.i(
+        'Capacities: ${result.capacitiesValid}/${result.capacityCount} valid',
+      );
+      _logger.i(
+        'Overall score: ${(result.overallScore * 100).toStringAsFixed(1)}%',
+      );
 
       return result;
     } catch (e) {
@@ -835,17 +982,24 @@ class DataMigrationService {
     if (hospital.address.city.isEmpty) return false;
     if (hospital.contact.phone.isEmpty) return false;
     if (hospital.contact.email.isEmpty) return false;
-    
+
     // Check location coordinates
-    if (hospital.location.latitude < -90 || hospital.location.latitude > 90) return false;
-    if (hospital.location.longitude < -180 || hospital.location.longitude > 180) return false;
-    
+    if (hospital.location.latitude < -90 || hospital.location.latitude > 90) {
+      return false;
+    }
+    if (hospital.location.longitude < -180 ||
+        hospital.location.longitude > 180) {
+      return false;
+    }
+
     // Check trauma level
-    if (hospital.traumaLevel < 1 || hospital.traumaLevel > 4) return false;
-    
+    if (hospital.traumaLevel < 1 || hospital.traumaLevel > 4) {
+      return false;
+    }
+
     // Check specializations
     if (hospital.specializations.isEmpty) return false;
-    
+
     return true;
   }
 
@@ -857,17 +1011,20 @@ class DataMigrationService {
     if (capacity.availableBeds > capacity.totalBeds) return false;
     if (capacity.icuBeds < 0) return false;
     if (capacity.emergencyBeds < 0) return false;
-    
+
     // Check staff count
     if (capacity.staffOnDuty < 0) return false;
-    
+
     // Check wait time
     if (capacity.averageWaitTime < 0) return false;
-    
+
     // Check occupancy rate calculation
-    final calculatedOccupancy = (capacity.totalBeds - capacity.availableBeds) / capacity.totalBeds;
-    if ((calculatedOccupancy - capacity.occupancyRate).abs() > 0.01) return false;
-    
+    final calculatedOccupancy =
+        (capacity.totalBeds - capacity.availableBeds) / capacity.totalBeds;
+    if ((calculatedOccupancy - capacity.occupancyRate).abs() > 0.01) {
+      return false;
+    }
+
     return true;
   }
 
@@ -884,29 +1041,36 @@ class DataMigrationService {
       final batch = _firestoreService.getFirestoreBatch();
 
       // Delete all hospitals
-      final hospitalsQuery = await _firestoreService.getAllDocumentsFromCollection('hospitals');
+      final hospitalsQuery = await _firestoreService
+          .getAllDocumentsFromCollection('hospitals');
       for (final doc in hospitalsQuery.docs) {
         batch.delete(doc.reference);
       }
 
       // Delete all capacities
-      final capacitiesQuery = await _firestoreService.getAllDocumentsFromCollection('hospital_capacity');
+      final capacitiesQuery = await _firestoreService
+          .getAllDocumentsFromCollection('hospital_capacity');
       for (final doc in capacitiesQuery.docs) {
         batch.delete(doc.reference);
       }
 
       // Delete all patient data
-      final vitalsQuery = await _firestoreService.getAllDocumentsFromCollection('patient_vitals');
+      final vitalsQuery = await _firestoreService.getAllDocumentsFromCollection(
+        'patient_vitals',
+      );
       for (final doc in vitalsQuery.docs) {
         batch.delete(doc.reference);
       }
 
-      final triageQuery = await _firestoreService.getAllDocumentsFromCollection('triage_results');
+      final triageQuery = await _firestoreService.getAllDocumentsFromCollection(
+        'triage_results',
+      );
       for (final doc in triageQuery.docs) {
         batch.delete(doc.reference);
       }
 
-      final consentsQuery = await _firestoreService.getAllDocumentsFromCollection('patient_consents');
+      final consentsQuery = await _firestoreService
+          .getAllDocumentsFromCollection('patient_consents');
       for (final doc in consentsQuery.docs) {
         batch.delete(doc.reference);
       }
@@ -923,13 +1087,15 @@ class DataMigrationService {
   Future<void> reseedAllData() async {
     try {
       _logger.i('Reseeding all data...');
-      
+
       await resetDevelopmentData();
       await seedHospitalData();
       await generateSamplePatientData();
-      
+
       final validation = await validateDataIntegrity();
-      _logger.i('Reseeding completed with ${(validation.overallScore * 100).toStringAsFixed(1)}% validation score');
+      _logger.i(
+        'Reseeding completed with ${(validation.overallScore * 100).toStringAsFixed(1)}% validation score',
+      );
     } catch (e) {
       _logger.e('Failed to reseed data: $e');
       rethrow;
@@ -945,24 +1111,35 @@ class DataMigrationService {
       final hospitals = await _firestoreService.getHospitals(limit: 1000);
       stats.totalHospitals = hospitals.length;
       stats.activeHospitals = hospitals.where((h) => h.isActive).length;
-      stats.traumaLevel1Hospitals = hospitals.where((h) => h.traumaLevel == 1).length;
+      stats.traumaLevel1Hospitals = hospitals
+          .where((h) => h.traumaLevel == 1)
+          .length;
 
       // Capacity statistics
       final hospitalIds = hospitals.map((h) => h.id).toList();
-      final capacities = await _firestoreService.getHospitalCapacities(hospitalIds);
+      final capacities = await _firestoreService.getHospitalCapacities(
+        hospitalIds,
+      );
       stats.totalCapacityRecords = capacities.length;
       stats.averageOccupancyRate = capacities.isNotEmpty
-          ? capacities.fold<double>(0, (sum, c) => sum + c.occupancyRate) / capacities.length
+          ? capacities.fold<double>(0, (sum, c) => sum + c.occupancyRate) /
+                capacities.length
           : 0.0;
 
       // Patient data statistics (sample counts)
-      final vitalsQuery = await _firestoreService.getCountFromCollection('patient_vitals');
+      final vitalsQuery = await _firestoreService.getCountFromCollection(
+        'patient_vitals',
+      );
       stats.totalVitalsRecords = vitalsQuery.count ?? 0;
 
-      final triageQuery = await _firestoreService.getCountFromCollection('triage_results');
+      final triageQuery = await _firestoreService.getCountFromCollection(
+        'triage_results',
+      );
       stats.totalTriageResults = triageQuery.count ?? 0;
 
-      final consentsQuery = await _firestoreService.getCountFromCollection('patient_consents');
+      final consentsQuery = await _firestoreService.getCountFromCollection(
+        'patient_consents',
+      );
       stats.totalConsentRecords = consentsQuery.count ?? 0;
 
       return stats;

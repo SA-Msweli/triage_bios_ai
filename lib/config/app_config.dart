@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html show window;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:js' as js;
+
+// Conditional imports for web vs mobile
+import 'app_config_web.dart'
+    if (dart.library.io) 'app_config_mobile.dart'
+    as platform;
 
 /// Centralized application configuration
 /// Loads settings from environment variables with fallback defaults
@@ -74,42 +75,23 @@ class AppConfig {
       return dotenv.env[key];
     }
 
-    // Strategy 2: Try build-time environment variables (web)
-    if (kIsWeb) {
-      // For web builds, environment variables can be injected at build time
-      // This would be configured in your build process
-      return _getWebEnvironmentVariable(key);
+    // Strategy 2: Try platform-specific environment variables
+    final platformEnv = _getPlatformEnvironmentVariable(key);
+    if (platformEnv != null && platformEnv.isNotEmpty) {
+      return platformEnv;
     }
 
     // Strategy 3: Try system environment variables (fallback)
     return _getSystemEnvironmentVariable(key);
   }
 
-  /// Get environment variable for web platform
-  String? _getWebEnvironmentVariable(String key) {
-    if (!kIsWeb) return null;
-
+  /// Get environment variable using platform-specific implementation
+  String? _getPlatformEnvironmentVariable(String key) {
     try {
-      // Strategy 1: Check JavaScript global variables (injected at build time)
-      // These would be injected by webpack DefinePlugin or similar build tools
-      final jsValue = js.context['env']?[key];
-      if (jsValue != null && jsValue is String && jsValue.isNotEmpty) {
-        return jsValue;
-      }
-
-      // Strategy 2: Check window object for environment variables
-      // Some deployment platforms inject variables into window object
-      final windowEnv = html.window.localStorage['env_$key'];
-      if (windowEnv != null && windowEnv.isNotEmpty) {
-        return windowEnv;
-      }
-
-      // Strategy 3: Check for build-time constants (dart-define values)
-      // These are injected at compile time using --dart-define flags
-      return _getBuildTimeConstant(key);
+      return platform.PlatformConfig.getEnvironmentVariable(key);
     } catch (e) {
       if (kDebugMode) {
-        print('⚠️ Error accessing web environment variable $key: $e');
+        print('⚠️ Error accessing platform environment variable $key: $e');
       }
       return null;
     }
@@ -119,11 +101,8 @@ class AppConfig {
   String? _getBuildTimeConstant(String key) {
     // These constants are injected at build time using --dart-define flags
     switch (key) {
-      case 'WATSONX_API_KEY':
-        const value = String.fromEnvironment('WATSONX_API_KEY');
-        return value.isNotEmpty ? value : null;
-      case 'WATSONX_PROJECT_ID':
-        const value = String.fromEnvironment('WATSONX_PROJECT_ID');
+      case 'GEMINI_API_KEY':
+        const value = String.fromEnvironment('GEMINI_API_KEY');
         return value.isNotEmpty ? value : null;
       case 'FIREBASE_PROJECT_ID':
         const value = String.fromEnvironment('FIREBASE_PROJECT_ID');
@@ -169,9 +148,7 @@ class AppConfig {
     print('📊 AppConfig Summary:');
     print('   Platform: ${kIsWeb ? 'Web' : 'Mobile/Desktop'}');
     print('   .env loaded: $_dotenvLoaded');
-    print(
-      '   Watson API configured: ${watsonxApiKey != 'demo_watsonx_api_key'}',
-    );
+    print('   Gemini API configured: ${geminiApiKey != 'demo_gemini_api_key'}');
     print(
       '   Firebase configured: ${firebaseProjectId != 'triage-bios-ai-demo'}',
     );
@@ -182,11 +159,7 @@ class AppConfig {
   /// Validate that required environment variables are present
   List<String> validateRequiredVariables() {
     final missing = <String>[];
-    final required = [
-      'WATSONX_API_KEY',
-      'WATSONX_PROJECT_ID',
-      'FIREBASE_PROJECT_ID',
-    ];
+    final required = ['GEMINI_API_KEY', 'FIREBASE_PROJECT_ID'];
 
     for (final key in required) {
       final value = _getEnv(key);
@@ -200,28 +173,22 @@ class AppConfig {
 
   /// Check if the app is running with production configuration
   bool get hasProductionConfig {
-    return watsonxApiKey != 'demo_watsonx_api_key' &&
+    return geminiApiKey != 'demo_gemini_api_key' &&
         firebaseProjectId != 'triage-bios-ai-demo';
   }
 
   // =============================================================================
-  // IBM Watson X.ai Configuration
+  // Google Gemini AI Configuration
   // =============================================================================
 
-  String get watsonxApiKey =>
-      _getEnv('WATSONX_API_KEY') ?? 'demo_watsonx_api_key';
+  String get geminiApiKey => _getEnv('GEMINI_API_KEY') ?? 'demo_gemini_api_key';
 
-  String get watsonxProjectId =>
-      _getEnv('WATSONX_PROJECT_ID') ?? 'demo_project_id';
+  String get geminiBaseUrl =>
+      _getEnv('GEMINI_BASE_URL') ?? 'https://generativelanguage.googleapis.com';
 
-  String get watsonxBaseUrl =>
-      _getEnv('WATSONX_BASE_URL') ?? 'https://us-south.ml.cloud.ibm.com';
+  String get geminiApiVersion => _getEnv('GEMINI_API_VERSION') ?? 'v1beta';
 
-  String get watsonxApiVersion =>
-      _getEnv('WATSONX_API_VERSION') ?? '2023-05-29';
-
-  String get graniteModelId =>
-      _getEnv('GRANITE_MODEL_ID') ?? 'ibm/granite-13b-chat-v2';
+  String get geminiModelId => _getEnv('GEMINI_MODEL_ID') ?? 'gemini-1.5-flash';
 
   // =============================================================================
   // IBM Cloud Configuration
@@ -281,73 +248,6 @@ class AppConfig {
 
   // Firebase Feature Flags
   bool get useFirebase => _getEnv('USE_FIREBASE')?.toLowerCase() == 'true';
-
-  // =============================================================================
-  // Hospital FHIR API Configuration
-  // =============================================================================
-
-  List<String> get demoHospitalFhirUrls => [
-    _getEnv('DEMO_HOSPITAL_1_FHIR_URL') ??
-        'https://demo-hospital-1.fhir.org/R4',
-    _getEnv('DEMO_HOSPITAL_2_FHIR_URL') ??
-        'https://demo-hospital-2.fhir.org/R4',
-    _getEnv('DEMO_HOSPITAL_3_FHIR_URL') ??
-        'https://demo-hospital-3.fhir.org/R4',
-    _getEnv('DEMO_HOSPITAL_4_FHIR_URL') ??
-        'https://demo-hospital-4.fhir.org/R4',
-    _getEnv('DEMO_HOSPITAL_5_FHIR_URL') ??
-        'https://demo-hospital-5.fhir.org/R4',
-  ];
-
-  String get productionFhirBaseUrl =>
-      _getEnv('PRODUCTION_FHIR_BASE_URL') ??
-      'https://api.healthcare.gov/fhir/R4';
-
-  String get fhirClientId => _getEnv('FHIR_CLIENT_ID') ?? 'demo_fhir_client_id';
-
-  String get fhirClientSecret =>
-      _getEnv('FHIR_CLIENT_SECRET') ?? 'demo_fhir_client_secret';
-
-  // African Healthcare System FHIR Endpoints
-  String get africaCdcFhirUrl =>
-      _getEnv('AFRICA_CDC_FHIR_URL') ?? 'https://demo-africacdc.org/fhir/R4';
-
-  String get whoAfroFhirUrl =>
-      _getEnv('WHO_AFRO_FHIR_URL') ?? 'https://demo-who-afro.int/fhir/R4';
-
-  // Country-specific Healthcare APIs
-  Map<String, String> get countryFhirUrls => {
-    'NG':
-        _getEnv('NIGERIA_FHIR_URL') ??
-        'https://demo-nigeria-health.gov.ng/fhir/R4',
-    'ZA':
-        _getEnv('SOUTH_AFRICA_FHIR_URL') ??
-        'https://demo-sa-health.gov.za/fhir/R4',
-    'KE':
-        _getEnv('KENYA_FHIR_URL') ?? 'https://demo-kenya-health.go.ke/fhir/R4',
-    'GH':
-        _getEnv('GHANA_FHIR_URL') ?? 'https://demo-ghana-health.gov.gh/fhir/R4',
-    'ET':
-        _getEnv('ETHIOPIA_FHIR_URL') ??
-        'https://demo-ethiopia-health.gov.et/fhir/R4',
-    'EG':
-        _getEnv('EGYPT_FHIR_URL') ?? 'https://demo-egypt-health.gov.eg/fhir/R4',
-    'MA':
-        _getEnv('MOROCCO_FHIR_URL') ??
-        'https://demo-morocco-health.gov.ma/fhir/R4',
-    'TN':
-        _getEnv('TUNISIA_FHIR_URL') ??
-        'https://demo-tunisia-health.gov.tn/fhir/R4',
-    'RW':
-        _getEnv('RWANDA_FHIR_URL') ??
-        'https://demo-rwanda-health.gov.rw/fhir/R4',
-    'UG':
-        _getEnv('UGANDA_FHIR_URL') ??
-        'https://demo-uganda-health.go.ug/fhir/R4',
-    'TZ':
-        _getEnv('TANZANIA_FHIR_URL') ??
-        'https://demo-tanzania-health.go.tz/fhir/R4',
-  };
 
   // =============================================================================
   // Wearable Device Integration
@@ -668,11 +568,8 @@ class AppConfig {
 
   String get logLevel => _getEnv('LOG_LEVEL') ?? 'debug';
 
-  bool get useMockWatsonx =>
-      _getEnv('USE_MOCK_WATSONX')?.toLowerCase() == 'true' || debugMode;
-
-  bool get useMockFhir =>
-      _getEnv('USE_MOCK_FHIR')?.toLowerCase() == 'true' || debugMode;
+  bool get useMockGemini =>
+      _getEnv('USE_MOCK_GEMINI')?.toLowerCase() == 'true' || debugMode;
 
   bool get useMockWearables =>
       _getEnv('USE_MOCK_WEARABLES')?.toLowerCase() == 'true' || debugMode;
@@ -722,11 +619,8 @@ class AppConfig {
   int get apiRateLimitPerMinute =>
       int.tryParse(_getEnv('API_RATE_LIMIT_PER_MINUTE') ?? '100') ?? 100;
 
-  int get watsonxTimeoutSeconds =>
-      int.tryParse(_getEnv('WATSONX_TIMEOUT_SECONDS') ?? '30') ?? 30;
-
-  int get fhirTimeoutSeconds =>
-      int.tryParse(_getEnv('FHIR_TIMEOUT_SECONDS') ?? '15') ?? 15;
+  int get geminiTimeoutSeconds =>
+      int.tryParse(_getEnv('GEMINI_TIMEOUT_SECONDS') ?? '30') ?? 30;
 
   int get cacheTtlSeconds =>
       int.tryParse(_getEnv('CACHE_TTL_SECONDS') ?? '300') ?? 300;
@@ -761,8 +655,7 @@ class AppConfig {
   bool get isDevelopment => flutterEnv == 'development';
   bool get isTest => flutterEnv == 'test';
 
-  Duration get watsonxTimeout => Duration(seconds: watsonxTimeoutSeconds);
-  Duration get fhirTimeout => Duration(seconds: fhirTimeoutSeconds);
+  Duration get geminiTimeout => Duration(seconds: geminiTimeoutSeconds);
   Duration get cacheTtl => Duration(seconds: cacheTtlSeconds);
   Duration get jwtExpiration => Duration(hours: jwtExpirationHours);
 
@@ -782,8 +675,7 @@ class AppConfig {
   Map<String, dynamic> get configSummary => {
     'environment': flutterEnv,
     'debug_mode': debugMode,
-    'watsonx_configured': watsonxApiKey != 'demo_watsonx_api_key',
-    'fhir_configured': fhirClientId != 'demo_fhir_client_id',
+    'gemini_configured': geminiApiKey != 'demo_gemini_api_key',
     'enabled_wearables': enabledWearablePlatforms,
     'feature_flags': {
       'blockchain_consent': enableBlockchainConsent,
@@ -796,8 +688,7 @@ class AppConfig {
       'image_analysis': enableImageAnalysis,
     },
     'mock_services': {
-      'watsonx': useMockWatsonx,
-      'fhir': useMockFhir,
+      'gemini': useMockGemini,
       'wearables': useMockWearables,
       'payments': useMockPayments,
     },

@@ -368,7 +368,9 @@ class _MultimodalInputWidgetState extends State<MultimodalInputWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Responsive text input with proper constraints (200-500px width)
-        ConstrainedResponsiveContainer.inputField(
+        ConstrainedResponsiveContainer(
+          minWidth: 200,
+          maxWidth: 500,
           child: TextField(
             controller: _textController,
             maxLines: isMobile ? 4 : 5,

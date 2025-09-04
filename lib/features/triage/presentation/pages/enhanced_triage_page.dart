@@ -5,14 +5,14 @@ import '../widgets/enhanced_vitals_widget.dart';
 import '../widgets/triage_result_widget.dart';
 import '../../domain/entities/triage_result.dart';
 import '../../domain/entities/patient_vitals.dart';
-// import '../../../../shared/services/watsonx_service.dart'; // Removed WatsonX
+import '../../../../shared/services/gemini_service.dart';
 import '../../../../shared/services/medical_algorithm_service.dart';
 import '../../../../shared/services/vitals_trend_service.dart';
-// import '../../../../shared/services/fhir_service.dart'; // Removed FHIR
-import '../../../../shared/services/hospital_routing_service.dart';
-// import '../../../../config/app_config.dart';
 
-/// Enhanced triage assessment page with AI integration (excluding WatsonX) and multimodal input
+import '../../../../shared/services/hospital_routing_service.dart';
+import '../../../../config/app_config.dart';
+
+/// Enhanced triage assessment page with Google Gemini AI integration and multimodal input
 class EnhancedTriagePage extends StatefulWidget {
   const EnhancedTriagePage({super.key});
 
@@ -22,10 +22,9 @@ class EnhancedTriagePage extends StatefulWidget {
 
 class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     with TickerProviderStateMixin {
-  // final WatsonxService _watsonxService = WatsonxService(); // Removed WatsonX
+  final GeminiService _geminiService = GeminiService();
   final MedicalAlgorithmService _medicalService = MedicalAlgorithmService();
   final VitalsTrendService _trendService = VitalsTrendService();
-  // final FhirService _fhirService = FhirService(); // Removed FHIR
   final HospitalRoutingService _routingService = HospitalRoutingService();
 
   // Assessment state
@@ -67,12 +66,8 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
 
   Future<void> _initializeServices() async {
     try {
-      // Initialize services (WatsonX and FHIR removed)
-      // _watsonxService.initialize( // Removed WatsonX
-      //   apiKey: AppConfig.instance.watsonxApiKey,
-      //   projectId: AppConfig.instance.watsonxProjectId,
-      // );
-      // _fhirService.initialize(); // Removed FHIR
+      // Initialize services
+      _geminiService.initialize(apiKey: AppConfig.instance.geminiApiKey);
 
       _showInfo(
         'AI Triage Engine initialized with medical algorithms', // Updated message
@@ -203,9 +198,9 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                         width: 20,
                         color: isCompleted
                             ? Colors.green
-                            : Theme.of(
-                                context,
-                              ).colorScheme.outline.withAlpha((255 * 0.3).round()),
+                            : Theme.of(context).colorScheme.outline.withAlpha(
+                                (255 * 0.3).round(),
+                              ),
                       ),
                   ],
                 ),
@@ -322,12 +317,10 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             // AI Status indicators
             Row(
               children: [
-                // _buildStatusChip('WatsonX.ai', true, Colors.blue), // Removed WatsonX
-                // const SizedBox(width: 8), // Removed WatsonX
+                _buildStatusChip('Gemini AI', true, Colors.blue),
+                const SizedBox(width: 8),
                 _buildStatusChip('Medical Algorithms', true, Colors.green),
                 const SizedBox(width: 8),
-                // _buildStatusChip('FHIR Integration', true, Colors.purple), // Removed FHIR
-                // const SizedBox(width: 8), // Removed FHIR
                 _buildStatusChip(
                   'Real-time Vitals',
                   _currentVitals != null,
@@ -345,10 +338,14 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? color.withAlpha((255 * 0.1).round()) : Colors.grey.shade100,
+        color: isActive
+            ? color.withAlpha((255 * 0.1).round())
+            : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? color.withAlpha((255 * 0.3).round()) : Colors.grey.shade300,
+          color: isActive
+              ? color.withAlpha((255 * 0.3).round())
+              : Colors.grey.shade300,
         ),
       ),
       child: Row(
@@ -438,10 +435,10 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             // Processing steps
             Column(
               children: [
-                // _buildProcessingStep( // Removed WatsonX
-                //   'Analyzing multimodal input with WatsonX.ai',
-                //   true,
-                // ),
+                _buildProcessingStep(
+                  'Analyzing multimodal input with Gemini AI',
+                  true,
+                ),
                 _buildProcessingStep(
                   'Running medical algorithm validation',
                   true,
@@ -655,31 +652,15 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
         // AI analysis step
       });
 
-      // Step 1: WatsonX.ai analysis (Removed)
-      // final aiResult = await _watsonxService.assessSymptoms( 
-      //   symptoms:
-      //       _inputData['textInput'] ??
-      //       _inputData['voiceText'] ??
-      //       'General symptoms',
-      //   vitals: _currentVitals,
-      //   demographics: {'age': 35, 'gender': 'unknown'},
-      // );
-
-      // Simulate a result as if WatsonX was called
-      final aiResult = TriageResult(
-        assessmentId: 'temp-patient-id', // Corrected from patientId
-        severityScore: 5.0, 
-        confidenceLower: 0.0, // Added missing parameter
-        confidenceUpper: 0.0, // Added missing parameter
-        urgencyLevel: UrgencyLevel.standard, // Corrected from .medium
-        explanation: 'Symptoms processed by medical algorithms.',
-        keySymptoms: <String>[], // Added missing parameter
-        concerningFindings: <String>[], // Added missing parameter
-        recommendedActions: ['Monitor vitals', 'Consult specialist if symptoms worsen'],
-        aiModelVersion: 'sim_v1.0', // Added missing parameter
-        timestamp: DateTime.now(),
+      // Step 1: Gemini AI analysis
+      final aiResult = await _geminiService.assessSymptoms(
+        symptoms:
+            _inputData['textInput'] ??
+            _inputData['voiceText'] ??
+            'General symptoms',
+        vitals: _currentVitals,
+        demographics: {'age': 35, 'gender': 'unknown'},
       );
-
 
       await Future.delayed(const Duration(seconds: 2));
 
@@ -694,7 +675,8 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             _inputData['voiceText'] ??
             'General symptoms',
         vitals: _currentVitals,
-        aiResult: { // Using simulated aiResult
+        aiResult: {
+          // Using simulated aiResult
           'severityScore': aiResult.severityScore,
           'urgencyLevel': aiResult.urgencyLevelString,
           'explanation': aiResult.explanation,
@@ -817,7 +799,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
-              // Text('• WatsonX.ai for natural language processing'), // Removed WatsonX
+              Text('• Google Gemini AI for natural language processing'),
               Text('• Medical algorithms for clinical validation'),
               Text('• Real-time vitals from wearable devices'),
               Text('• Multimodal input (voice, text, images)'),

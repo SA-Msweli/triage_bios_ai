@@ -16,7 +16,7 @@ class TriageResultFirestore extends Equatable {
   final String? recommendedHospitalId;
   final double? estimatedWaitTime;
   final DateTime createdAt;
-  final String watsonxModelVersion;
+  final String geminiModelVersion;
 
   const TriageResultFirestore({
     required this.id,
@@ -32,7 +32,7 @@ class TriageResultFirestore extends Equatable {
     this.recommendedHospitalId,
     this.estimatedWaitTime,
     required this.createdAt,
-    required this.watsonxModelVersion,
+    required this.geminiModelVersion,
   });
 
   /// Check if this is a critical case requiring immediate attention
@@ -74,7 +74,8 @@ class TriageResultFirestore extends Equatable {
       recommendedHospitalId: data['recommendedHospitalId'] as String?,
       estimatedWaitTime: (data['estimatedWaitTime'] as num?)?.toDouble(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      watsonxModelVersion: data['watsonxModelVersion'] as String,
+      geminiModelVersion:
+          data['geminiModelVersion'] as String? ?? 'gemini-1.5-flash',
     );
   }
 
@@ -94,10 +95,75 @@ class TriageResultFirestore extends Equatable {
         'recommendedHospitalId': recommendedHospitalId,
       if (estimatedWaitTime != null) 'estimatedWaitTime': estimatedWaitTime,
       'createdAt': Timestamp.fromDate(createdAt),
-      'watsonxModelVersion': watsonxModelVersion,
+      'geminiModelVersion': geminiModelVersion,
       'isCritical': isCritical,
       'isUrgent': isUrgent,
     };
+  }
+
+  /// Create from domain entity
+  factory TriageResultFirestore.fromDomain(dynamic domainResult) {
+    return TriageResultFirestore(
+      id: '', // Will be set by Firestore
+      patientId: domainResult.patientId ?? 'unknown',
+      sessionId:
+          domainResult.assessmentId ??
+          domainResult.sessionId ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      symptoms: domainResult.symptoms ?? '',
+      severityScore: domainResult.severityScore ?? 0.0,
+      urgencyLevel: _mapUrgencyFromDomain(domainResult.urgencyLevel),
+      aiReasoning: domainResult.explanation ?? domainResult.aiReasoning ?? '',
+      recommendedActions: List<String>.from(
+        domainResult.recommendedActions ?? [],
+      ),
+      vitalsContribution: domainResult.vitalsContribution ?? 0.0,
+      confidence:
+          domainResult.confidence ??
+          (domainResult.confidenceLower + domainResult.confidenceUpper) / 2 ??
+          0.5,
+      recommendedHospitalId: domainResult.recommendedHospitalId,
+      estimatedWaitTime: domainResult.estimatedWaitTime,
+      createdAt: domainResult.timestamp ?? DateTime.now(),
+      geminiModelVersion: domainResult.aiModelVersion ?? 'gemini-1.5-flash',
+    );
+  }
+
+  /// Convert to domain entity
+  dynamic toDomain() {
+    // This would return the appropriate domain entity
+    // For now, returning a map representation
+    return {
+      'id': id,
+      'assessmentId': sessionId,
+      'patientId': patientId,
+      'symptoms': symptoms,
+      'severityScore': severityScore,
+      'urgencyLevel': urgencyLevel,
+      'explanation': aiReasoning,
+      'recommendedActions': recommendedActions,
+      'vitalsContribution': vitalsContribution,
+      'confidence': confidence,
+      'confidenceLower': confidence - 0.1,
+      'confidenceUpper': confidence + 0.1,
+      'recommendedHospitalId': recommendedHospitalId,
+      'estimatedWaitTime': estimatedWaitTime,
+      'timestamp': createdAt,
+      'aiModelVersion': geminiModelVersion,
+      'isCritical': isCritical,
+    };
+  }
+
+  static UrgencyLevel _mapUrgencyFromDomain(dynamic domainUrgency) {
+    if (domainUrgency == null) return UrgencyLevel.standard;
+
+    final urgencyStr = domainUrgency.toString().toUpperCase();
+    if (urgencyStr.contains('CRITICAL')) return UrgencyLevel.critical;
+    if (urgencyStr.contains('URGENT')) return UrgencyLevel.urgent;
+    if (urgencyStr.contains('NON_URGENT') || urgencyStr.contains('NONURGENT')) {
+      return UrgencyLevel.nonUrgent;
+    }
+    return UrgencyLevel.standard;
   }
 
   TriageResultFirestore copyWith({
@@ -114,7 +180,7 @@ class TriageResultFirestore extends Equatable {
     String? recommendedHospitalId,
     double? estimatedWaitTime,
     DateTime? createdAt,
-    String? watsonxModelVersion,
+    String? geminiModelVersion,
   }) {
     return TriageResultFirestore(
       id: id ?? this.id,
@@ -131,7 +197,7 @@ class TriageResultFirestore extends Equatable {
           recommendedHospitalId ?? this.recommendedHospitalId,
       estimatedWaitTime: estimatedWaitTime ?? this.estimatedWaitTime,
       createdAt: createdAt ?? this.createdAt,
-      watsonxModelVersion: watsonxModelVersion ?? this.watsonxModelVersion,
+      geminiModelVersion: geminiModelVersion ?? this.geminiModelVersion,
     );
   }
 
@@ -150,7 +216,7 @@ class TriageResultFirestore extends Equatable {
     recommendedHospitalId,
     estimatedWaitTime,
     createdAt,
-    watsonxModelVersion,
+    geminiModelVersion,
   ];
 }
 

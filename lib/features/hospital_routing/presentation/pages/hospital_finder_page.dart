@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/services/fhir_service.dart';
+import '../../../../shared/services/firestore_data_service.dart';
 import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/constrained_responsive_container.dart';
@@ -15,7 +15,7 @@ class HospitalFinderPage extends StatefulWidget {
 }
 
 class _HospitalFinderPageState extends State<HospitalFinderPage> {
-  final FhirService _fhirService = FhirService();
+  final FirestoreDataService _firestoreService = FirestoreDataService();
   final HospitalRoutingService _routingService = HospitalRoutingService();
 
   List<HospitalCapacity> _hospitals = [];
@@ -23,10 +23,20 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
   String? _errorMessage;
   bool _showMapView = false;
 
+  // Real-time data streams
+  Stream<List<HospitalCapacity>>? _hospitalStream;
+  List<String> _hospitalIds = [];
+
   @override
   void initState() {
     super.initState();
     _loadHospitals();
+  }
+
+  @override
+  void dispose() {
+    // Clean up any active streams
+    super.dispose();
   }
 
   Future<void> _loadHospitals() async {
@@ -36,22 +46,32 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
     });
 
     try {
-      _fhirService.initialize();
       await _routingService.initialize();
 
       // Load nearby hospitals (using NYC coordinates as default)
-      final hospitals = await _fhirService.getHospitalCapacities(
+      final hospitals = await _firestoreService.getHospitalsInRadius(
         latitude: 40.7128,
         longitude: -74.0060,
         radiusKm: 25.0,
       );
 
+      // Convert HospitalFirestore to HospitalCapacity using proper factory method
+      final hospitalCapacities = hospitals
+          .map((hospital) => HospitalCapacity.fromFirestore(hospital))
+          .toList();
+
       // Use routing service to optimize hospital order by travel time
       final optimizedHospitals = await _routingService.optimizeHospitalRoutes(
-        hospitals,
+        hospitalCapacities,
         userLatitude: 40.7128,
         userLongitude: -74.0060,
       );
+
+      // Store hospital IDs for real-time monitoring
+      _hospitalIds = optimizedHospitals.map((h) => h.hospitalId).toList();
+
+      // Set up real-time capacity monitoring
+      _setupRealTimeMonitoring();
 
       setState(() {
         _hospitals = optimizedHospitals;
@@ -62,6 +82,27 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
         _errorMessage = 'Failed to load hospitals: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  void _setupRealTimeMonitoring() {
+    if (_hospitalIds.isNotEmpty) {
+      _hospitalStream = _firestoreService
+          .listenToHospitalCapacities(_hospitalIds)
+          .map((capacities) {
+            // Convert to HospitalCapacity and maintain order
+            final capacityMap = <String, HospitalCapacity>{};
+            for (final capacity in capacities) {
+              capacityMap[capacity.hospitalId] =
+                  HospitalCapacity.fromFirestoreCapacity(capacity);
+            }
+
+            // Update existing hospitals with new capacity data
+            return _hospitals.map((hospital) {
+              final updatedCapacity = capacityMap[hospital.hospitalId];
+              return updatedCapacity ?? hospital;
+            }).toList();
+          });
     }
   }
 
@@ -111,19 +152,85 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
       return _buildEmptyState(context);
     }
 
+    // Use StreamBuilder for real-time updates when available
+    if (_hospitalStream != null) {
+      return StreamBuilder<List<HospitalCapacity>>(
+        stream: _hospitalStream,
+        initialData: _hospitals,
+        builder: (context, snapshot) {
+          final hospitals = snapshot.data ?? _hospitals;
+
+          // Show connection status indicator
+          final isConnected =
+              snapshot.connectionState == ConnectionState.active;
+
+          return Column(
+            children: [
+              if (!isConnected)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.orange.shade100,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.wifi_off,
+                        size: 16,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Real-time updates unavailable',
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: _buildHospitalContent(
+                  context,
+                  hospitals,
+                  isMobile,
+                  isTablet,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    return _buildHospitalContent(context, _hospitals, isMobile, isTablet);
+  }
+
+  Widget _buildHospitalContent(
+    BuildContext context,
+    List<HospitalCapacity> hospitals,
+    bool isMobile,
+    bool isTablet,
+  ) {
     // On mobile, show either map or list based on toggle
     if (isMobile) {
-      return _showMapView ? _buildMapView(context) : _buildListView(context);
+      return _showMapView
+          ? _buildMapView(context, hospitals)
+          : _buildListView(context, hospitals);
     }
 
     // On tablet and desktop, show both map and list side by side
     return Row(
       children: [
         // Map view (left side)
-        Expanded(flex: isTablet ? 1 : 2, child: _buildMapView(context)),
+        Expanded(
+          flex: isTablet ? 1 : 2,
+          child: _buildMapView(context, hospitals),
+        ),
 
         // List view (right side)
-        Expanded(flex: 1, child: _buildListView(context)),
+        Expanded(flex: 1, child: _buildListView(context, hospitals)),
       ],
     );
   }
@@ -221,18 +328,22 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
     );
   }
 
-  Widget _buildMapView(BuildContext context) {
+  Widget _buildMapView(BuildContext context, List<HospitalCapacity> hospitals) {
     return ConstrainedResponsiveContainer.hospitalMap(
-      child: const HospitalMapWidget(
+      child: HospitalMapWidget(
+        hospitals: hospitals,
         severityScore: null, // Can be passed from triage results
       ),
     );
   }
 
-  Widget _buildListView(BuildContext context) {
+  Widget _buildListView(
+    BuildContext context,
+    List<HospitalCapacity> hospitals,
+  ) {
     return Column(
       children: [
-        // Header
+        // Header with real-time indicator
         Container(
           padding: ResponsiveBreakpoints.getResponsivePadding(context),
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -245,13 +356,41 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${_hospitals.length} hospitals found nearby',
+                  '${hospitals.length} hospitals found nearby',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (_hospitalStream != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.wifi, size: 12, color: Colors.green.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        'LIVE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -260,9 +399,9 @@ class _HospitalFinderPageState extends State<HospitalFinderPage> {
         Expanded(
           child: ListView.builder(
             padding: ResponsiveBreakpoints.getResponsivePadding(context),
-            itemCount: _hospitals.length,
+            itemCount: hospitals.length,
             itemBuilder: (context, index) {
-              final hospital = _hospitals[index];
+              final hospital = hospitals[index];
               return _buildResponsiveHospitalCard(hospital);
             },
           ),

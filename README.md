@@ -2,7 +2,7 @@
 
 **Vital Intelligence for Critical Decisions**
 
-A revolutionary AI-powered emergency response platform that transforms hospital emergency room operations through intelligent triage, predictive analytics, and dynamic routing. Leveraging IBM watsonx.ai's advanced language models and real-time wearable vitals data.
+A revolutionary AI-powered emergency response platform that transforms hospital emergency room operations through intelligent triage, predictive analytics, and dynamic routing. Leveraging Google Gemini AI's advanced language models and real-time wearable vitals data.
 
 ## 🎯 Project Overview
 
@@ -10,7 +10,7 @@ Triage-BIOS.ai combines cutting-edge AI with real-time biometric data from weara
 
 ### Key Innovation
 
-- **First-of-its-kind** AI triage system using watsonx.ai Granite models
+- **First-of-its-kind** AI triage system using Google Gemini AI models
 - **Real-time vitals enhancement** from Apple Health, Google Fit, and medical wearables
 - **Sub-second response times** for critical emergency situations
 - **Explainable AI** with transparent reasoning for medical decisions
@@ -18,7 +18,7 @@ Triage-BIOS.ai combines cutting-edge AI with real-time biometric data from weara
 ## 🏆 Hackathon Alignment
 
 - **Syrotech Focus**: Advanced AI/ML implementation with real-world healthcare impact
-- **IBM TechXchange**: Deep integration of watsonx.ai, watsonx.data, and IBM Cloud services
+- **Google AI Integration**: Deep integration of Gemini AI and Google Cloud services
 - **SDG Impact**: Directly addresses UN SDG 3 (Good Health) and SDG 11 (Sustainable Cities)
 
 ## 📊 Measurable Impact
@@ -35,7 +35,7 @@ Triage-BIOS.ai combines cutting-edge AI with real-time biometric data from weara
 - **Flutter SDK** 3.8.1+ - [Install Flutter](https://flutter.dev/docs/get-started/install)
 - **Dart SDK** 3.8.1+ (included with Flutter)
 - **Firebase CLI** - `npm install -g firebase-tools`
-- **IBM watsonx.ai API access** (for production)
+- **Google Gemini API access** (for production)
 
 ### Environment Setup
 
@@ -47,8 +47,7 @@ Triage-BIOS.ai combines cutting-edge AI with real-time biometric data from weara
 2. **Configure your API keys** in `.env`:
    ```bash
    # Required for production
-   WATSONX_API_KEY=your_watsonx_api_key_here
-   WATSONX_PROJECT_ID=your_watsonx_project_id_here
+   GEMINI_API_KEY=your_gemini_api_key_here
    
    # Firebase configuration
    FIREBASE_PROJECT_ID=triagebiosai
@@ -133,7 +132,7 @@ graph TB
     
     subgraph "AI Processing Layer"
         TS[Triage Service]
-        WS[Watsonx Service]
+        GS[Gemini Service]
         HS[Health Service]
     end
     
@@ -144,7 +143,7 @@ graph TB
     end
     
     subgraph "External Services"
-        WX[IBM watsonx.ai]
+        GM[Google Gemini AI]
         AH[Apple Health]
         GF[Google Fit]
     end
@@ -169,7 +168,7 @@ graph TB
 ### Core Components
 
 1. **Triage Service** - Main orchestration service
-2. **Watsonx Service** - AI model integration
+2. **Gemini Service** - AI model integration
 3. **Health Service** - Wearable device integration
 4. **Patient Vitals** - Biometric data processing
 5. **Triage Result** - Assessment output with explanations
@@ -183,7 +182,7 @@ flowchart TD
     A[Patient Input] --> B[Symptom Analysis]
     A --> C[Vitals Collection]
     
-    B --> D[Base AI Score<br/>watsonx.ai Granite]
+    B --> D[Base AI Score<br/>Google Gemini AI]
     C --> E[Vitals Processing<br/>Clinical Thresholds]
     
     D --> F[Score Combination]
@@ -218,7 +217,7 @@ flowchart TD
 
 ### ✅ Implemented (MVP)
 
-- **AI Symptom Analysis**: watsonx.ai integration with severity scoring
+- **AI Symptom Analysis**: Google Gemini AI integration with severity scoring
 - **Wearable Vitals Integration**: Real-time biometric data processing
 - **Critical Case Detection**: Automatic emergency alerting
 - **Explainable AI**: Transparent reasoning for medical decisions

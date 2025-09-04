@@ -9,10 +9,21 @@ abstract class TriageRepository {
     PatientVitals? vitals,
     Map<String, dynamic>? demographics,
   });
-  
+
   Future<Either<Failure, PatientVitals>> getLatestVitals();
-  
+
   Future<Either<Failure, bool>> checkHealthPermissions();
-  
+
   Future<Either<Failure, void>> requestHealthPermissions();
+
+  // Firestore persistence methods
+  Future<Either<Failure, void>> storeTriageResult(TriageResult result);
+
+  Future<Either<Failure, void>> storePatientVitals(PatientVitals vitals);
+
+  Future<Either<Failure, List<TriageResult>>> getPatientHistory(
+    String patientId,
+  );
+
+  Stream<List<TriageResult>> watchPatientHistory(String patientId);
 }

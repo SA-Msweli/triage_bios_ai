@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'firestore/hospital_firestore.dart';
+import 'firestore/hospital_capacity_firestore.dart';
 
 /// Unified hospital capacity model used across the application
 class HospitalCapacity extends Equatable {
@@ -8,6 +10,9 @@ class HospitalCapacity extends Equatable {
   final String name;
   final double? latitude;
   final double? longitude;
+
+  // Hospital ID for Firestore compatibility
+  String get hospitalId => id;
 
   // Capacity data
   final int totalBeds;
@@ -50,6 +55,45 @@ class HospitalCapacity extends Equatable {
       patientsInQueue: 0,
       averageWaitTime: 0.0,
       lastUpdated: DateTime.now(),
+    );
+  }
+
+  /// Create from HospitalFirestore data
+  factory HospitalCapacity.fromFirestore(HospitalFirestore hospital) {
+    return HospitalCapacity(
+      id: hospital.id,
+      name: hospital.name,
+      latitude: hospital.location.latitude,
+      longitude: hospital.location.longitude,
+      // Use default capacity values since HospitalFirestore doesn't have capacity data
+      // In a real implementation, this would come from a separate capacity service
+      totalBeds: 200,
+      availableBeds: 50,
+      icuBeds: 10,
+      emergencyBeds: 15,
+      staffOnDuty: 30,
+      patientsInQueue: 5,
+      averageWaitTime: 45.0,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  /// Create from HospitalCapacityFirestore data
+  factory HospitalCapacity.fromFirestoreCapacity(
+    HospitalCapacityFirestore capacity,
+  ) {
+    return HospitalCapacity(
+      id: capacity.hospitalId,
+      name:
+          'Hospital ${capacity.hospitalId}', // Would need to fetch hospital name separately
+      totalBeds: capacity.totalBeds,
+      availableBeds: capacity.availableBeds,
+      icuBeds: capacity.icuBeds,
+      emergencyBeds: capacity.emergencyAvailable,
+      staffOnDuty: capacity.staffOnDuty,
+      patientsInQueue: capacity.patientsInQueue,
+      averageWaitTime: capacity.averageWaitTime.toDouble(),
+      lastUpdated: capacity.lastUpdated,
     );
   }
 

@@ -1,0 +1,404 @@
+{
+  "environments": {
+    "development": {
+      "projectId": "triage-bios-dev",
+      "hosting": {
+        "target": "dev",
+        "public": "build/web",
+        "ignore": [
+          "firebase.json",
+          "**/.*",
+          "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "**",
+            "destination": "/index.html"
+          }
+        ],
+        "headers": [
+          {
+            "source": "**/*.@(js|css)",
+            "headers": [
+              {
+                "key": "Cache-Control",
+                "value": "max-age=31536000"
+              }
+            ]
+          }
+        ]
+      },
+      "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+      },
+      "functions": {
+        "source": "functions",
+        "runtime": "nodejs18",
+        "predeploy": [
+          "npm --prefix \"$RESOURCE_DIR\" run build"
+        ]
+      },
+      "emulators": {
+        "auth": {
+          "port": 9099
+        },
+        "firestore": {
+          "port": 8080
+        },
+        "hosting": {
+          "port": 5000
+        },
+        "ui": {
+          "enabled": true,
+          "port": 4000
+        }
+      }
+    },
+    "staging": {
+      "projectId": "triage-bios-staging",
+      "hosting": {
+        "target": "staging",
+        "public": "build/web",
+        "ignore": [
+          "firebase.json",
+          "**/.*",
+          "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "**",
+            "destination": "/index.html"
+          }
+        ],
+        "headers": [
+          {
+            "source": "**/*.@(js|css)",
+            "headers": [
+              {
+                "key": "Cache-Control",
+                "value": "max-age=86400"
+              }
+            ]
+          },
+          {
+            "source": "**/*.@(png|jpg|jpeg|gif|svg|webp)",
+            "headers": [
+              {
+                "key": "Cache-Control",
+                "value": "max-age=604800"
+              }
+            ]
+          }
+        ],
+        "cleanUrls": true,
+        "trailingSlash": false
+      },
+      "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+      },
+      "functions": {
+        "source": "functions",
+        "runtime": "nodejs18",
+        "predeploy": [
+          "npm --prefix \"$RESOURCE_DIR\" run lint",
+          "npm --prefix \"$RESOURCE_DIR\" run build"
+        ],
+        "postdeploy": [
+          "npm --prefix \"$RESOURCE_DIR\" run test:integration"
+        ]
+      }
+    },
+    "production": {
+      "projectId": "triage-bios-prod",
+      "hosting": {
+        "target": "prod",
+        "public": "build/web",
+        "ignore": [
+          "firebase.json",
+          "**/.*",
+          "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "**",
+            "destination": "/index.html"
+          }
+        ],
+        "headers": [
+          {
+            "source": "**/*.@(js|css)",
+            "headers": [
+              {
+                "key": "Cache-Control",
+                "value": "max-age=31536000"
+              },
+              {
+                "key": "X-Content-Type-Options",
+                "value": "nosniff"
+              },
+              {
+                "key": "X-Frame-Options",
+                "value": "DENY"
+              },
+              {
+                "key": "X-XSS-Protection",
+                "value": "1; mode=block"
+              }
+            ]
+          },
+          {
+            "source": "**/*.@(png|jpg|jpeg|gif|svg|webp|ico)",
+            "headers": [
+              {
+                "key": "Cache-Control",
+                "value": "max-age=2592000"
+              }
+            ]
+          },
+          {
+            "source": "/",
+            "headers": [
+              {
+                "key": "Strict-Transport-Security",
+                "value": "max-age=31536000; includeSubDomains"
+              },
+              {
+                "key": "Content-Security-Policy",
+                "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com"
+              }
+            ]
+          }
+        ],
+        "cleanUrls": true,
+        "trailingSlash": false
+      },
+      "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+      },
+      "functions": {
+        "source": "functions",
+        "runtime": "nodejs18",
+        "predeploy": [
+          "npm --prefix \"$RESOURCE_DIR\" run lint",
+          "npm --prefix \"$RESOURCE_DIR\" run test",
+          "npm --prefix \"$RESOURCE_DIR\" run build"
+        ],
+        "postdeploy": [
+          "npm --prefix \"$RESOURCE_DIR\" run test:integration",
+          "npm --prefix \"$RESOURCE_DIR\" run test:e2e"
+        ]
+      }
+    }
+  },
+  "deploymentSteps": {
+    "preDeployment": [
+      {
+        "name": "Environment Validation",
+        "command": "scripts/validate-environment.sh",
+        "required": true
+      },
+      {
+        "name": "Security Scan",
+        "command": "npm run security:scan",
+        "required": true,
+        "environments": [
+          "staging",
+          "production"
+        ]
+      },
+      {
+        "name": "Dependency Audit",
+        "command": "npm audit --audit-level moderate",
+        "required": true,
+        "environments": [
+          "production"
+        ]
+      }
+    ],
+    "postDeployment": [
+      {
+        "name": "Health Check",
+        "command": "scripts/health-check.sh",
+        "required": true
+      },
+      {
+        "name": "Performance Test",
+        "command": "npm run test:performance",
+        "required": false,
+        "environments": [
+          "staging",
+          "production"
+        ]
+      },
+      {
+        "name": "Smoke Tests",
+        "command": "npm run test:smoke",
+        "required": true,
+        "environments": [
+          "production"
+        ]
+      }
+    ]
+  },
+  "rollbackStrategy": {
+    "enabled": true,
+    "autoRollback": {
+      "enabled": true,
+      "triggers": [
+        {
+          "metric": "error_rate",
+          "threshold": 0.05,
+          "duration": "5m"
+        },
+        {
+          "metric": "response_time_p95",
+          "threshold": 5000,
+          "duration": "3m"
+        }
+      ]
+    },
+    "manualRollback": {
+      "command": "firebase hosting:clone SOURCE_SITE_ID TARGET_SITE_ID",
+      "confirmationRequired": true
+    }
+  },
+  "monitoring": {
+    "healthChecks": [
+      {
+        "name": "Application Health",
+        "url": "/health",
+        "interval": "30s",
+        "timeout": "10s",
+        "expectedStatus": 200
+      },
+      {
+        "name": "Firestore Connectivity",
+        "url": "/api/health/firestore",
+        "interval": "60s",
+        "timeout": "15s",
+        "expectedStatus": 200
+      },
+      {
+        "name": "Authentication Service",
+        "url": "/api/health/auth",
+        "interval": "60s",
+        "timeout": "10s",
+        "expectedStatus": 200
+      }
+    ],
+    "alerts": [
+      {
+        "name": "High Error Rate",
+        "condition": "error_rate > 0.01",
+        "severity": "warning",
+        "channels": [
+          "email",
+          "slack"
+        ]
+      },
+      {
+        "name": "Critical Error Rate",
+        "condition": "error_rate > 0.05",
+        "severity": "critical",
+        "channels": [
+          "email",
+          "slack",
+          "pagerduty"
+        ]
+      },
+      {
+        "name": "High Response Time",
+        "condition": "response_time_p95 > 3000",
+        "severity": "warning",
+        "channels": [
+          "email"
+        ]
+      }
+    ]
+  },
+  "backup": {
+    "firestore": {
+      "enabled": true,
+      "schedule": "0 2 * * *",
+      "retention": {
+        "daily": 7,
+        "weekly": 4,
+        "monthly": 12
+      },
+      "collections": [
+        "hospitals",
+        "hospital_capacity",
+        "patient_vitals",
+        "triage_results",
+        "patient_consents"
+      ]
+    },
+    "storage": {
+      "enabled": true,
+      "schedule": "0 3 * * *",
+      "retention": {
+        "daily": 30,
+        "monthly": 12
+      }
+    }
+  },
+  "security": {
+    "firestoreRules": {
+      "validation": {
+        "enabled": true,
+        "testSuite": "test/security-rules.test.js"
+      }
+    },
+    "cors": {
+      "development": [
+        "http://localhost:3000",
+        "http://localhost:8080"
+      ],
+      "staging": [
+        "https://staging.triagebiosa.com"
+      ],
+      "production": [
+        "https://triagebiosa.com",
+        "https://www.triagebiosa.com"
+      ]
+    },
+    "contentSecurityPolicy": {
+      "development": {
+        "default-src": "'self'",
+        "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src": "'self' 'unsafe-inline'"
+      },
+      "production": {
+        "default-src": "'self'",
+        "script-src": "'self' https://apis.google.com",
+        "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src": "'self' https://fonts.gstatic.com",
+        "img-src": "'self' data: https:",
+        "connect-src": "'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com"
+      }
+    }
+  },
+  "performance": {
+    "budgets": [
+      {
+        "type": "bundle",
+        "maximumWarning": "2mb",
+        "maximumError": "5mb"
+      },
+      {
+        "type": "initial",
+        "maximumWarning": "500kb",
+        "maximumError": "1mb"
+      }
+    ],
+    "optimization": {
+      "minification": true,
+      "compression": true,
+      "treeshaking": true,
+      "codesplitting": true
+    }
+  }
+}

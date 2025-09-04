@@ -1,23 +1,46 @@
-class WatsonxConstants {
-  // Watson X.ai Configuration
-  static const String watsonxBaseUrl = 'https://us-south.ml.cloud.ibm.com';
-  static const String watsonxApiVersion = 'v1';
-  
+class GeminiConstants {
+  // Gemini AI Configuration
+  static const String geminiBaseUrl =
+      'https://generativelanguage.googleapis.com';
+  static const String geminiApiVersion = 'v1beta';
+
   // Model Configuration
-  static const String graniteModelId = 'ibm/granite-13b-chat-v2';
+  static const String geminiModelId = 'gemini-1.5-flash';
   static const String triageModelVersion = 'v1.0.0';
-  
+
   // API Endpoints
-  static const String generateEndpoint = '/ml/v1/text/generation';
-  static const String tokenEndpoint = '/v1/authorize';
-  
+  static const String generateEndpoint =
+      '/v1beta/models/gemini-1.5-flash:generateContent';
+
   // Request Configuration
   static const int maxTokens = 500;
-  static const double temperature = 0.3; // Lower for more consistent medical responses
+  static const double temperature =
+      0.3; // Lower for more consistent medical responses
+  static const int topK = 40;
   static const double topP = 0.9;
   static const int maxRetries = 3;
   static const Duration requestTimeout = Duration(seconds: 10);
-  
+
+  // Safety Settings
+  static const List<Map<String, dynamic>> safetySettings = [
+    {
+      'category': 'HARM_CATEGORY_HARASSMENT',
+      'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      'category': 'HARM_CATEGORY_HATE_SPEECH',
+      'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+      'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+      'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+  ];
+
   // Triage Prompts
   static const String systemPrompt = '''
 You are a medical AI assistant specialized in emergency triage. Your role is to assess patient symptoms and provide a severity score from 0-10 where:
@@ -43,7 +66,10 @@ Always provide:
 Be conservative - when in doubt, err on the side of higher severity.
 ''';
 
-  static const String triagePromptTemplate = '''
+  static const String triagePromptTemplate =
+      '''
+$systemPrompt
+
 Patient presents with the following symptoms:
 {symptoms}
 

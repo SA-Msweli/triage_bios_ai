@@ -4,8 +4,8 @@ import 'auth_service.dart';
 
 /// LDAP/Active Directory integration service for hospital identity systems
 class LdapService extends IntegratedAuthService {
-  static final LdapService _instance = LdapService._internal();
-  factory LdapService() => _instance;
+  static LdapService? _instance;
+  factory LdapService() => _instance ??= LdapService._internal();
   LdapService._internal() : super();
 
   final Logger _logger = Logger();

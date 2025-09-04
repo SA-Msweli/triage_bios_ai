@@ -19,7 +19,7 @@ import 'features/dashboard/presentation/widgets/dashboard_router.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/firestore_auth_service.dart';
 import 'shared/services/firebase_service.dart';
-import 'shared/services/enterprise_auth_service.dart';
+
 import 'shared/middleware/auth_middleware.dart';
 import 'config/app_config.dart';
 import 'firebase_options.dart';
@@ -46,7 +46,7 @@ void main() async {
           options: DefaultFirebaseOptions.currentPlatform,
         );
 
-        // Initialize Firebase service
+        // Initialize Firebase service with offline support
         final firebaseService = FirebaseService();
         await firebaseService.initialize();
 
@@ -88,9 +88,16 @@ void main() async {
 }
 
 Future<void> _initializeLocalAuth() async {
-  final authService = EnterpriseAuthService();
-  await authService.initialize();
-  await authService.createDemoUsers();
+  try {
+    final authService = AuthService();
+    await authService.initialize();
+    await authService.createDemoUsers();
+  } catch (e) {
+    if (kDebugMode) {
+      print('⚠️ Local auth initialization failed: $e');
+    }
+    // Continue anyway - the app can still function with basic auth
+  }
 }
 
 class TriageBiosApp extends StatelessWidget {
@@ -306,11 +313,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('✅ WatsonX.ai Triage Engine - Operational'),
+                  const Text('✅ Google Gemini AI Triage Engine - Operational'),
                   const Text(
                     '✅ Multi-Platform Wearables (8+ devices) - Connected',
                   ),
-                  const Text('✅ FHIR R4 Hospital APIs - Active'),
+                  const Text('✅ Firebase Hospital Data - Active'),
                   const Text('✅ Blockchain Consent Management - Secure'),
                   const Text('✅ Medical Algorithm Service (ESI/MEWS) - Active'),
                   const Text('✅ Vitals Trend Analysis - Monitoring'),

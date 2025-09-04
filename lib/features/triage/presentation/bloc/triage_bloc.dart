@@ -42,12 +42,36 @@ class TriageBloc extends Bloc<TriageEvent, TriageState> {
         _logger.e('Triage assessment failed: ${failure.message}');
         emit(TriageError(failure.message));
       },
-      (triageResult) {
-        _logger.i('Triage assessment completed: Score ${triageResult.severityScore}');
-        emit(TriageAssessmentComplete(
-          result: triageResult,
-          vitals: event.vitals,
-        ));
+      (triageResult) async {
+        _logger.i(
+          'Triage assessment completed: Score ${triageResult.severityScore}',
+        );
+
+        // Persist triage result to Firestore
+        final storeResult = await triageRepository.storeTriageResult(
+          triageResult,
+        );
+        storeResult.fold(
+          (failure) =>
+              _logger.w('Failed to store triage result: ${failure.message}'),
+          (_) => _logger.i('Triage result stored successfully'),
+        );
+
+        // Persist vitals if available
+        if (event.vitals != null) {
+          final storeVitals = await triageRepository.storePatientVitals(
+            event.vitals!,
+          );
+          storeVitals.fold(
+            (failure) =>
+                _logger.w('Failed to store patient vitals: ${failure.message}'),
+            (_) => _logger.i('Patient vitals stored successfully'),
+          );
+        }
+
+        emit(
+          TriageAssessmentComplete(result: triageResult, vitals: event.vitals),
+        );
       },
     );
   }
@@ -63,17 +87,20 @@ class TriageBloc extends Bloc<TriageEvent, TriageState> {
     // First check permissions
     final permissionsResult = await triageRepository.checkHealthPermissions();
     bool hasPermissions = false;
-    
+
     permissionsResult.fold(
       (failure) => hasPermissions = false,
       (permissions) => hasPermissions = permissions,
     );
 
     if (!hasPermissions) {
-      emit(VitalsError(
-        message: 'Health data access not granted. Please enable permissions to access wearable data.',
-        hasPermissions: false,
-      ));
+      emit(
+        VitalsError(
+          message:
+              'Health data access not granted. Please enable permissions to access wearable data.',
+          hasPermissions: false,
+        ),
+      );
       return;
     }
 
@@ -83,17 +110,15 @@ class TriageBloc extends Bloc<TriageEvent, TriageState> {
     vitalsResult.fold(
       (failure) {
         _logger.w('Failed to load vitals: ${failure.message}');
-        emit(VitalsError(
-          message: failure.message,
-          hasPermissions: hasPermissions,
-        ));
+        emit(
+          VitalsError(message: failure.message, hasPermissions: hasPermissions),
+        );
       },
       (vitals) {
-        _logger.i('Vitals loaded successfully: HR=${vitals.heartRate}, SpO2=${vitals.oxygenSaturation}');
-        emit(VitalsLoaded(
-          vitals: vitals,
-          hasPermissions: hasPermissions,
-        ));
+        _logger.i(
+          'Vitals loaded successfully: HR=${vitals.heartRate}, SpO2=${vitals.oxygenSaturation}',
+        );
+        emit(VitalsLoaded(vitals: vitals, hasPermissions: hasPermissions));
       },
     );
   }
@@ -102,7 +127,9 @@ class TriageBloc extends Bloc<TriageEvent, TriageState> {
     RequestHealthPermissionsEvent event,
     Emitter<TriageState> emit,
   ) async {
-    emit(const HealthPermissionsState(hasPermissions: false, isRequesting: true));
+    emit(
+      const HealthPermissionsState(hasPermissions: false, isRequesting: true),
+    );
 
     _logger.i('Requesting health data permissions');
 
@@ -111,7 +138,12 @@ class TriageBloc extends Bloc<TriageEvent, TriageState> {
     result.fold(
       (failure) {
         _logger.e('Failed to request permissions: ${failure.message}');
-        emit(const HealthPermissionsState(hasPermissions: false, isRequesting: false));
+        emit(
+          const HealthPermissionsState(
+            hasPermissions: false,
+            isRequesting: false,
+          ),
+        );
       },
       (_) {
         _logger.i('Health permissions requested successfully');

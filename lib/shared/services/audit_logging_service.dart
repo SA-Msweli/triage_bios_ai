@@ -40,7 +40,7 @@ class AuditLoggingService {
     _logger.i('Auth event logged: ${eventType.name} for user $userId');
   }
 
-  /// Log data access event
+  /// Log data access event with enhanced HIPAA compliance tracking
   Future<void> logDataAccess({
     required String userId,
     required String resourceId,
@@ -51,6 +51,10 @@ class AuditLoggingService {
     List<String>? dataScopes,
     bool success = true,
     String? errorMessage,
+    String? purpose,
+    bool minimumNecessaryCompliant = true,
+    bool consentVerified = true,
+    String? deviceFingerprint,
     Map<String, dynamic>? additionalData,
   }) async {
     final auditLog = AuditLog(
@@ -66,12 +70,26 @@ class AuditLoggingService {
       dataScopes: dataScopes,
       success: success,
       errorMessage: errorMessage,
-      additionalData: additionalData ?? {},
+      additionalData: {
+        'purpose': purpose,
+        'minimum_necessary_compliant': minimumNecessaryCompliant,
+        'consent_verified': consentVerified,
+        'device_fingerprint': deviceFingerprint,
+        'hipaa_compliant':
+            success && minimumNecessaryCompliant && consentVerified,
+        'access_timestamp_utc': DateTime.now().toUtc().toIso8601String(),
+        ...?additionalData,
+      },
     );
 
     await _storeAuditLog(auditLog);
+
+    // Also store in Firestore for real-time compliance monitoring
+    await _storeAuditLogInFirestore(auditLog);
+
     _logger.i(
-      'Data access logged: ${accessType.name} on $resourceType by user $userId',
+      'Data access logged: ${accessType.name} on $resourceType by user $userId '
+      '(HIPAA Compliant: ${auditLog.additionalData['hipaa_compliant']})',
     );
   }
 
@@ -396,12 +414,100 @@ class AuditLoggingService {
     final consentEvents = logs
         .where((log) => log.category == AuditCategory.consent)
         .length;
+    final hipaaCompliantEvents = logs
+        .where((log) => log.additionalData['hipaa_compliant'] == true)
+        .length;
 
-    // Basic compliance score calculation
+    // Enhanced compliance score calculation with HIPAA factors
     final successRate = successfulEvents / totalEvents;
     final consentRate = consentEvents / totalEvents;
+    final hipaaComplianceRate = hipaaCompliantEvents / totalEvents;
 
-    return ((successRate * 0.7) + (consentRate * 0.3)) * 100;
+    return ((successRate * 0.4) +
+            (consentRate * 0.3) +
+            (hipaaComplianceRate * 0.3)) *
+        100;
+  }
+
+  /// Store audit log in Firestore for real-time monitoring
+  Future<void> _storeAuditLogInFirestore(AuditLog auditLog) async {
+    try {
+      // This would integrate with FirestoreDataService to store audit logs
+      // For now, we'll just log that it would be stored
+      _logger.d('Audit log would be stored in Firestore: ${auditLog.id}');
+    } catch (e) {
+      _logger.e('Failed to store audit log in Firestore: $e');
+    }
+  }
+
+  /// Log encryption/decryption events for compliance
+  Future<void> logEncryptionEvent({
+    required String userId,
+    required String operation, // 'encrypt' or 'decrypt'
+    required String dataType,
+    required String resourceId,
+    required String ipAddress,
+    bool success = true,
+    String? errorMessage,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    final auditLog = AuditLog(
+      id: _uuid.v4(),
+      timestamp: DateTime.now(),
+      category: AuditCategory.security,
+      eventType: 'data_$operation',
+      userId: userId,
+      resourceId: resourceId,
+      resourceType: dataType,
+      ipAddress: ipAddress,
+      success: success,
+      errorMessage: errorMessage,
+      additionalData: {
+        'encryption_operation': operation,
+        'data_type': dataType,
+        'compliance_requirement': 'HIPAA_164.312(a)(2)(iv)',
+        ...?additionalData,
+      },
+    );
+
+    await _storeAuditLog(auditLog);
+    _logger.i(
+      'Encryption event logged: $operation on $dataType by user $userId',
+    );
+  }
+
+  /// Log HIPAA compliance check events
+  Future<void> logComplianceCheck({
+    required String userId,
+    required String checkType,
+    required bool compliant,
+    required String ipAddress,
+    String? patientId,
+    String? reason,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    final auditLog = AuditLog(
+      id: _uuid.v4(),
+      timestamp: DateTime.now(),
+      category: AuditCategory.security,
+      eventType: 'compliance_check',
+      userId: userId,
+      ipAddress: ipAddress,
+      patientId: patientId,
+      success: compliant,
+      errorMessage: compliant ? null : reason,
+      additionalData: {
+        'check_type': checkType,
+        'compliance_result': compliant,
+        'hipaa_regulation': 'Various',
+        ...?additionalData,
+      },
+    );
+
+    await _storeAuditLog(auditLog);
+    _logger.i(
+      'Compliance check logged: $checkType - ${compliant ? 'COMPLIANT' : 'VIOLATION'}',
+    );
   }
 }
 

@@ -1,4 +1,4 @@
-import '../../../../shared/services/watsonx_service.dart';
+import '../../../../shared/services/gemini_service.dart';
 import '../../domain/entities/patient_vitals.dart';
 import '../../domain/entities/triage_result.dart';
 
@@ -8,14 +8,14 @@ abstract class TriageRemoteDataSource {
     PatientVitals? vitals,
     Map<String, dynamic>? demographics,
   });
-  
+
   Future<bool> checkServiceHealth();
 }
 
 class TriageRemoteDataSourceImpl implements TriageRemoteDataSource {
-  final WatsonxService watsonxService;
+  final GeminiService geminiService;
 
-  TriageRemoteDataSourceImpl({required this.watsonxService});
+  TriageRemoteDataSourceImpl({required this.geminiService});
 
   @override
   Future<TriageResult> assessSymptoms({
@@ -23,7 +23,8 @@ class TriageRemoteDataSourceImpl implements TriageRemoteDataSource {
     PatientVitals? vitals,
     Map<String, dynamic>? demographics,
   }) async {
-    return await watsonxService.assessSymptoms(
+    // Use the correct GeminiService method
+    return await geminiService.assessSymptoms(
       symptoms: symptoms,
       vitals: vitals,
       demographics: demographics,
@@ -32,6 +33,12 @@ class TriageRemoteDataSourceImpl implements TriageRemoteDataSource {
 
   @override
   Future<bool> checkServiceHealth() async {
-    return await watsonxService.isHealthy();
+    try {
+      // Use the correct health check method
+      final healthStatus = await geminiService.getHealthStatus();
+      return healthStatus['gemini'] == true;
+    } catch (e) {
+      return false;
+    }
   }
 }

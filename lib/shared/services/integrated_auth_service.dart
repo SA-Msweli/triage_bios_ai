@@ -9,7 +9,7 @@ class IntegratedAuthService extends AuthService {
   IntegratedAuthService() : super.forSubclass();
 
   final Logger _logger = Logger();
-  final LdapService _ldapService = LdapService();
+  LdapService? _ldapService;
 
   static const String _ldapConfigKey = 'ldap_config';
   static const String _authModeKey = 'auth_mode';
@@ -31,7 +31,8 @@ class IntegratedAuthService extends AuthService {
       // Initialize LDAP service if configured
       if (_ldapConfig != null && _authMode != AuthenticationMode.local) {
         try {
-          await _ldapService.configureLdap(_ldapConfig!, _authMode);
+          _ldapService = LdapService();
+          await _ldapService!.configureLdap(_ldapConfig!, _authMode);
           _logger.i('LDAP integration initialized successfully');
         } catch (e) {
           _logger.e(
@@ -96,7 +97,8 @@ class IntegratedAuthService extends AuthService {
       // Extract username from email (assuming email format)
       final username = email.contains('@') ? email.split('@')[0] : email;
 
-      final ldapResult = await _ldapService.authenticateUser(
+      _ldapService ??= LdapService();
+      final ldapResult = await _ldapService!.authenticateUser(
         username,
         password,
       );
@@ -181,8 +183,9 @@ class IntegratedAuthService extends AuthService {
       _authMode = mode;
 
       // Test LDAP connection
-      await _ldapService.configureLdap(config, mode);
-      final connectionTest = await _ldapService.testConnection();
+      _ldapService ??= LdapService();
+      await _ldapService!.configureLdap(config, mode);
+      final connectionTest = await _ldapService!.testConnection();
 
       if (!connectionTest) {
         throw Exception('LDAP connection test failed');
@@ -208,7 +211,8 @@ class IntegratedAuthService extends AuthService {
     try {
       _logger.i('Starting LDAP user synchronization');
 
-      final syncResult = await _ldapService.synchronizeUsers();
+      _ldapService ??= LdapService();
+      final syncResult = await _ldapService!.synchronizeUsers();
 
       if (syncResult.success) {
         await _logAuthEvent('ldap_sync_success', 'system', {
@@ -255,13 +259,15 @@ class IntegratedAuthService extends AuthService {
 
   /// Get LDAP sync status
   LdapSyncStatus getLdapSyncStatus() {
-    return _ldapService.getSyncStatus();
+    _ldapService ??= LdapService();
+    return _ldapService!.getSyncStatus();
   }
 
   /// Test LDAP connection
   Future<bool> testLdapConnection() async {
     if (_authMode == AuthenticationMode.local) return false;
-    return await _ldapService.testConnection();
+    _ldapService ??= LdapService();
+    return await _ldapService!.testConnection();
   }
 
   /// Enable/disable LDAP fallback

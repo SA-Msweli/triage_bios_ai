@@ -6,7 +6,7 @@ import '../widgets/consent_panel_widget.dart';
 
 import '../../../../shared/services/hospital_routing_service.dart';
 import '../../../../shared/services/consent_service.dart';
-import '../../../../shared/services/watsonx_service.dart';
+import '../../../../shared/services/gemini_service.dart';
 import '../../../../shared/services/medical_algorithm_service.dart';
 import '../../../../config/app_config.dart';
 import '../../../../shared/services/multimodal_input_service.dart';
@@ -31,7 +31,7 @@ class TriagePortalPage extends StatefulWidget {
 class _TriagePortalPageState extends State<TriagePortalPage> {
   final HospitalRoutingService _routingService = HospitalRoutingService();
   final ConsentService _consentService = ConsentService();
-  final WatsonxService _watsonxService = WatsonxService();
+  final GeminiService _geminiService = GeminiService();
   final MedicalAlgorithmService _medicalService = MedicalAlgorithmService();
   final MultiModalInputService _multiModalService = MultiModalInputService();
   final VitalsTrendService _trendService = VitalsTrendService();
@@ -54,11 +54,8 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
     });
 
     try {
-      // Initialize WatsonX AI service for symptom analysis
-      _watsonxService.initialize(
-        apiKey: AppConfig.instance.watsonxApiKey,
-        projectId: AppConfig.instance.watsonxProjectId,
-      );
+      // Initialize Gemini AI service for symptom analysis
+      _geminiService.initialize(apiKey: AppConfig.instance.geminiApiKey);
 
       // Initialize multimodal input service for voice/image input
       await _multiModalService.initialize();
@@ -66,7 +63,7 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
       // Load nearby hospitals for map display
       await _loadNearbyHospitals();
 
-      _showInfo('AI Triage Engine initialized with WatsonX.ai');
+      _showInfo('AI Triage Engine initialized with Google Gemini AI');
     } catch (e) {
       _showError('Failed to initialize portal: $e');
     } finally {
@@ -79,19 +76,22 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
   Future<void> _loadNearbyHospitals() async {
     try {
       // Use the existing _routingService instance
-      final hospitals = await _routingService.getNearbyHospitals( 
+      final hospitals = await _routingService.getNearbyHospitals(
         latitude: 40.7128, // Default to NYC
         longitude: -74.0060,
         radiusKm: 25.0,
       );
 
-      if (mounted) { // Check if the widget is still in the tree
+      if (mounted) {
+        // Check if the widget is still in the tree
         setState(() {
           _nearbyHospitals = hospitals;
         });
       }
     } catch (e) {
-      _showError('Failed to load nearby hospitals: $e'); // It's better to show an error
+      _showError(
+        'Failed to load nearby hospitals: $e',
+      ); // It's better to show an error
     }
   }
 
@@ -1334,10 +1334,10 @@ class _TriagePortalPageState extends State<TriagePortalPage> {
     });
 
     try {
-      _showInfo('Analyzing symptoms with WatsonX.ai...');
+      _showInfo('Analyzing symptoms with Google Gemini AI...');
 
-      // Step 1: Use WatsonX AI for symptom analysis (Milestone 1 & 2 requirement)
-      final aiTriageResult = await _watsonxService.assessSymptoms(
+      // Step 1: Use Google Gemini AI for symptom analysis (Milestone 1 & 2 requirement)
+      final aiTriageResult = await _geminiService.assessSymptoms(
         symptoms: _triageData['symptoms'] ?? '',
         vitals: _triageData['vitals'],
         demographics: {

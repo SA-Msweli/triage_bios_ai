@@ -245,7 +245,7 @@ Returns system health status and service availability.
 {
   "status": "healthy",
   "services": {
-    "watsonx": {
+    "gemini": {
       "status": "healthy",
       "responseTime": 245,
       "lastCheck": "2024-01-15T10:30:00Z"
@@ -374,7 +374,7 @@ Returns system health status and service availability.
 | `FORBIDDEN` | Insufficient permissions | 403 |
 | `RESOURCE_NOT_FOUND` | Requested resource not found | 404 |
 | `RATE_LIMIT_EXCEEDED` | Too many requests | 429 |
-| `AI_SERVICE_UNAVAILABLE` | watsonx.ai service down | 503 |
+| `AI_SERVICE_UNAVAILABLE` | Gemini AI service down | 503 |
 | `HEALTH_SERVICE_ERROR` | Wearable device connection failed | 503 |
 | `INTERNAL_ERROR` | Unexpected server error | 500 |
 

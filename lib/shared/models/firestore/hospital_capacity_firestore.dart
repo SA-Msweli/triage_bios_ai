@@ -146,15 +146,12 @@ class HospitalCapacityFirestore extends Equatable {
 
 enum DataSource {
   firestore,
-  fhir,
   customApi;
 
   factory DataSource.fromString(String value) {
     switch (value) {
       case 'firestore':
         return DataSource.firestore;
-      case 'fhir':
-        return DataSource.fhir;
       case 'custom_api':
         return DataSource.customApi;
       default:
@@ -167,8 +164,6 @@ enum DataSource {
     switch (this) {
       case DataSource.firestore:
         return 'firestore';
-      case DataSource.fhir:
-        return 'fhir';
       case DataSource.customApi:
         return 'custom_api';
     }

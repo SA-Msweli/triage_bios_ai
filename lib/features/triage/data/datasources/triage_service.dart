@@ -1,5 +1,5 @@
 import 'package:logger/logger.dart';
-import '../../../../shared/services/watsonx_service.dart';
+import '../../../../shared/services/gemini_service.dart';
 import '../../../../shared/services/health_service.dart';
 import '../../domain/entities/patient_vitals.dart';
 import '../../domain/entities/triage_result.dart';
@@ -11,26 +11,19 @@ class TriageService {
   TriageService._internal();
 
   final Logger _logger = Logger();
-  late final WatsonxService _watsonxService;
+  late final GeminiService _geminiService;
   late final HealthService _healthService;
   bool _isInitialized = false;
 
   /// Initialize the triage service with required dependencies
-  void initialize({
-    required String watsonxApiKey,
-    String? watsonxProjectId,
-  }) {
+  Future<void> initialize({required String geminiApiKey}) async {
     if (_isInitialized) {
       _logger.w('TriageService already initialized');
       return;
     }
 
-    _watsonxService = WatsonxService();
-    _watsonxService.initialize(
-      apiKey: watsonxApiKey,
-      projectId: watsonxProjectId,
-    );
-
+    _geminiService = GeminiService();
+    await _geminiService.initialize(apiKey: geminiApiKey);
     _healthService = HealthService();
     _isInitialized = true;
 
@@ -47,7 +40,9 @@ class TriageService {
     _ensureInitialized();
 
     try {
-      _logger.i('Starting triage assessment for symptoms: ${symptoms.length > 50 ? '${symptoms.substring(0, 50)}...' : symptoms}');
+      _logger.i(
+        'Starting triage assessment for symptoms: ${symptoms.length > 50 ? '${symptoms.substring(0, 50)}...' : symptoms}',
+      );
 
       PatientVitals? vitals = providedVitals;
 
@@ -56,25 +51,31 @@ class TriageService {
         try {
           vitals = await _healthService.getLatestVitals();
           if (vitals != null) {
-            _logger.i('Retrieved vitals from health service: HR=${vitals.heartRate}, SpO2=${vitals.oxygenSaturation}');
+            _logger.i(
+              'Retrieved vitals from health service: HR=${vitals.heartRate}, SpO2=${vitals.oxygenSaturation}',
+            );
           }
         } catch (e) {
           _logger.w('Failed to retrieve vitals, continuing without: $e');
         }
       }
 
-      // Perform AI assessment
-      final result = await _watsonxService.assessSymptoms(
+      // Perform AI assessment using Gemini
+      final result = await _geminiService.assessSymptoms(
         symptoms: symptoms,
         vitals: vitals,
         demographics: demographics,
       );
 
-      _logger.i('Triage assessment completed: Score=${result.severityScore}, Level=${result.urgencyLevelString}');
+      _logger.i(
+        'Triage assessment completed: Score=${result.severityScore}, Level=${result.urgencyLevelString}',
+      );
 
       // Log vitals contribution if available
       if (result.vitalsContribution != null && result.vitalsContribution! > 0) {
-        _logger.i('Vitals contributed +${result.vitalsContribution} points to severity score');
+        _logger.i(
+          'Vitals contributed +${result.vitalsContribution} points to severity score',
+        );
       }
 
       return result;
@@ -121,14 +122,15 @@ class TriageService {
     }
   }
 
-  /// Check if the Watson X.ai service is healthy
-  Future<bool> isWatsonxHealthy() async {
+  /// Check if the Gemini AI service is healthy
+  Future<bool> isGeminiHealthy() async {
     _ensureInitialized();
 
     try {
-      return await _watsonxService.isHealthy();
+      final healthStatus = await _geminiService.getHealthStatus();
+      return healthStatus['gemini'] == true;
     } catch (e) {
-      _logger.e('Watson X.ai health check failed: $e');
+      _logger.e('Gemini AI health check failed: $e');
       return false;
     }
   }
@@ -139,16 +141,17 @@ class TriageService {
 
     final results = <String, bool>{};
 
-    // Check Watson X.ai service
+    // Check Gemini AI service
     try {
-      results['watsonx'] = await _watsonxService.isHealthy();
+      results['gemini'] = await isGeminiHealthy();
     } catch (e) {
-      results['watsonx'] = false;
+      results['gemini'] = false;
     }
 
     // Check health service permissions
     try {
-      results['health_permissions'] = await _healthService.hasHealthPermissions();
+      results['health_permissions'] = await _healthService
+          .hasHealthPermissions();
     } catch (e) {
       results['health_permissions'] = false;
     }
@@ -159,7 +162,9 @@ class TriageService {
 
   void _ensureInitialized() {
     if (!_isInitialized) {
-      throw StateError('TriageService not initialized. Call initialize() first.');
+      throw StateError(
+        'TriageService not initialized. Call initialize() first.',
+      );
     }
   }
 }

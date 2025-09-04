@@ -37,6 +37,42 @@
       ]
     },
     {
+      "collectionGroup": "hospitals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "traumaLevel",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hospitals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "location.latitude",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "hospital_capacity",
       "queryScope": "COLLECTION",
       "fields": [
@@ -65,6 +101,42 @@
         {
           "fieldPath": "isRealTime",
           "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hospital_capacity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hospitalId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isRealTime",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastUpdated",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hospital_capacity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "availableBeds",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "occupancyRate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastUpdated",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -104,6 +176,42 @@
       "collectionGroup": "patient_vitals",
       "queryScope": "COLLECTION",
       "fields": [
+        {
+          "fieldPath": "source",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "patient_vitals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hasAbnormalVitals",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "vitalsSeverityScore",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "patient_vitals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "patientId",
+          "order": "ASCENDING"
+        },
         {
           "fieldPath": "source",
           "order": "ASCENDING"

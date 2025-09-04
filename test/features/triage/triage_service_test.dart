@@ -9,10 +9,7 @@ void main() {
     setUp(() {
       triageService = TriageService();
       // Initialize with mock API key for testing
-      triageService.initialize(
-        watsonxApiKey: 'test_api_key',
-        watsonxProjectId: 'test_project',
-      );
+      triageService.initialize(geminiApiKey: 'test_api_key');
     });
 
     test('should perform basic triage assessment without vitals', () async {
@@ -53,8 +50,14 @@ void main() {
       );
 
       // Assert
-      expect(result.severityScore, greaterThan(5.0)); // Should be higher due to symptoms + vitals
-      expect(result.vitalsContribution, greaterThan(0)); // Vitals should contribute
+      expect(
+        result.severityScore,
+        greaterThan(5.0),
+      ); // Should be higher due to symptoms + vitals
+      expect(
+        result.vitalsContribution,
+        greaterThan(0),
+      ); // Vitals should contribute
       expect(result.vitals, equals(vitals));
       expect(result.vitalsExplanation, contains('vitals'));
     });
@@ -78,11 +81,17 @@ void main() {
       );
 
       // Assert
-      expect(result.severityScore, greaterThanOrEqualTo(8.0)); // Should be critical
+      expect(
+        result.severityScore,
+        greaterThanOrEqualTo(8.0),
+      ); // Should be critical
       expect(result.isCritical, isTrue);
       expect(result.requiresImmediateAttention, isTrue);
       expect(result.urgencyLevelString, equals('CRITICAL'));
-      expect(result.vitalsContribution, greaterThan(2.0)); // Significant vitals boost
+      expect(
+        result.vitalsContribution,
+        greaterThan(2.0),
+      ); // Significant vitals boost
     });
 
     test('should perform health check', () async {
@@ -91,7 +100,7 @@ void main() {
 
       // Assert
       expect(healthStatus, isA<Map<String, bool>>());
-      expect(healthStatus.containsKey('watsonx'), isTrue);
+      expect(healthStatus.containsKey('gemini'), isTrue);
       expect(healthStatus.containsKey('health_permissions'), isTrue);
     });
 
@@ -101,7 +110,10 @@ void main() {
         symptoms: 'I have a minor headache',
         includeVitals: false,
       );
-      expect(result.severityScore, lessThanOrEqualTo(6.0)); // Headache is standard priority
+      expect(
+        result.severityScore,
+        lessThanOrEqualTo(6.0),
+      ); // Headache is standard priority
 
       // Test urgent symptoms
       result = await triageService.performTriageAssessment(

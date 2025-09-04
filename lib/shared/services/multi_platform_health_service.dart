@@ -1,23 +1,35 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:logger/logger.dart';
 import '../../features/triage/domain/entities/patient_vitals.dart';
+import 'wearable_device_service.dart';
+import 'device_sync_service.dart';
 
 /// Multi-platform health service supporting various wearable devices
 class MultiPlatformHealthService {
-  static final MultiPlatformHealthService _instance = MultiPlatformHealthService._internal();
+  static final MultiPlatformHealthService _instance =
+      MultiPlatformHealthService._internal();
   factory MultiPlatformHealthService() => _instance;
   MultiPlatformHealthService._internal();
 
   final Logger _logger = Logger();
-  
+
   // Platform-specific health services
   AppleHealthService? _appleHealth;
   GoogleHealthService? _googleHealth;
   SamsungHealthService? _samsungHealth;
   FitbitService? _fitbitService;
-  
+
   final List<WearableDevice> _connectedDevices = [];
   bool _isInitialized = false;
+
+  // Integration services
+  WearableDeviceService? _wearableService;
+  DeviceSyncService? _syncService;
+
+  // Monitoring
+  Timer? _vitalsMonitoringTimer;
+  String? _currentPatientId;
 
   /// Initialize all available health platforms
   Future<bool> initialize() async {
@@ -25,33 +37,46 @@ class MultiPlatformHealthService {
 
     try {
       _logger.i('Initializing multi-platform health service...');
-      
+
       // Initialize platform-specific services
       if (Platform.isIOS) {
         _appleHealth = AppleHealthService();
         await _appleHealth!.initialize();
       }
-      
+
       if (Platform.isAndroid) {
         _googleHealth = GoogleHealthService();
         await _googleHealth!.initialize();
-        
+
         // Samsung Health is available on Android
         _samsungHealth = SamsungHealthService();
         await _samsungHealth!.initialize();
       }
-      
+
       // Fitbit works on both platforms via Web API
       _fitbitService = FitbitService();
       await _fitbitService!.initialize();
-      
+
+      // Initialize integration services
+      _wearableService = WearableDeviceService();
+      await _wearableService!.initialize();
+
+      _syncService = DeviceSyncService();
+      await _syncService!.initialize();
+
       // Discover available devices
       await _discoverDevices();
-      
+
+      // Start continuous monitoring if patient is set
+      if (_currentPatientId != null) {
+        _startVitalsMonitoring();
+      }
+
       _isInitialized = true;
-      _logger.i('Multi-platform health service initialized with ${_connectedDevices.length} devices');
+      _logger.i(
+        'Multi-platform health service initialized with ${_connectedDevices.length} devices',
+      );
       return true;
-      
     } catch (e) {
       _logger.e('Failed to initialize multi-platform health service: $e');
       return false;
@@ -61,31 +86,31 @@ class MultiPlatformHealthService {
   /// Discover and pair available wearable devices
   Future<void> _discoverDevices() async {
     _connectedDevices.clear();
-    
+
     // Check Apple devices (iOS only)
     if (_appleHealth != null) {
       final appleDevices = await _appleHealth!.getConnectedDevices();
       _connectedDevices.addAll(appleDevices);
     }
-    
+
     // Check Google Health Connect devices (Android only)
     if (_googleHealth != null) {
       final googleDevices = await _googleHealth!.getConnectedDevices();
       _connectedDevices.addAll(googleDevices);
     }
-    
+
     // Check Samsung Health devices (Android only)
     if (_samsungHealth != null) {
       final samsungDevices = await _samsungHealth!.getConnectedDevices();
       _connectedDevices.addAll(samsungDevices);
     }
-    
+
     // Check Fitbit devices (both platforms)
     if (_fitbitService != null) {
       final fitbitDevices = await _fitbitService!.getConnectedDevices();
       _connectedDevices.addAll(fitbitDevices);
     }
-    
+
     _logger.i('Discovered ${_connectedDevices.length} wearable devices');
   }
 
@@ -97,36 +122,35 @@ class MultiPlatformHealthService {
 
     try {
       final List<PatientVitals> allVitals = [];
-      
+
       // Collect vitals from all platforms
       if (_appleHealth != null) {
         final appleVitals = await _appleHealth!.getLatestVitals();
         if (appleVitals != null) allVitals.add(appleVitals);
       }
-      
+
       if (_googleHealth != null) {
         final googleVitals = await _googleHealth!.getLatestVitals();
         if (googleVitals != null) allVitals.add(googleVitals);
       }
-      
+
       if (_samsungHealth != null) {
         final samsungVitals = await _samsungHealth!.getLatestVitals();
         if (samsungVitals != null) allVitals.add(samsungVitals);
       }
-      
+
       if (_fitbitService != null) {
         final fitbitVitals = await _fitbitService!.getLatestVitals();
         if (fitbitVitals != null) allVitals.add(fitbitVitals);
       }
-      
+
       if (allVitals.isEmpty) {
         _logger.w('No vitals data available from any platform');
         return null;
       }
-      
+
       // Merge vitals from multiple sources
       return _mergeVitalsData(allVitals);
-      
     } catch (e) {
       _logger.e('Failed to get latest vitals: $e');
       return null;
@@ -141,10 +165,10 @@ class MultiPlatformHealthService {
       if (timeComparison != 0) return timeComparison;
       return (b.dataQuality ?? 0.0).compareTo(a.dataQuality ?? 0.0);
     });
-    
+
     // Use the most recent timestamp as base
     final latestVitals = vitalsList.first;
-    
+
     // Merge data, preferring higher quality readings
     int? bestHeartRate;
     String? bestBloodPressure;
@@ -155,60 +179,113 @@ class MultiPlatformHealthService {
     String deviceSources = '';
     double totalQuality = 0.0;
     int qualityCount = 0;
-    
+
     for (final vitals in vitalsList) {
       final quality = vitals.dataQuality ?? 0.5;
-      
+
       // Heart rate - prefer higher quality or more recent
-      if (vitals.heartRate != null && 
-          (bestHeartRate == null || quality > (vitalsList.firstWhere((v) => v.heartRate == bestHeartRate, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.heartRate != null &&
+          (bestHeartRate == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) => v.heartRate == bestHeartRate,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestHeartRate = vitals.heartRate;
       }
-      
+
       // Blood pressure
-      if (vitals.bloodPressure != null && 
-          (bestBloodPressure == null || quality > (vitalsList.firstWhere((v) => v.bloodPressure == bestBloodPressure, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.bloodPressure != null &&
+          (bestBloodPressure == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) => v.bloodPressure == bestBloodPressure,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestBloodPressure = vitals.bloodPressure;
       }
-      
+
       // Temperature
-      if (vitals.temperature != null && 
-          (bestTemperature == null || quality > (vitalsList.firstWhere((v) => v.temperature == bestTemperature, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.temperature != null &&
+          (bestTemperature == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) => v.temperature == bestTemperature,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestTemperature = vitals.temperature;
       }
-      
+
       // Oxygen saturation
-      if (vitals.oxygenSaturation != null && 
-          (bestOxygenSaturation == null || quality > (vitalsList.firstWhere((v) => v.oxygenSaturation == bestOxygenSaturation, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.oxygenSaturation != null &&
+          (bestOxygenSaturation == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) => v.oxygenSaturation == bestOxygenSaturation,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestOxygenSaturation = vitals.oxygenSaturation;
       }
-      
+
       // Respiratory rate
-      if (vitals.respiratoryRate != null && 
-          (bestRespiratoryRate == null || quality > (vitalsList.firstWhere((v) => v.respiratoryRate == bestRespiratoryRate, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.respiratoryRate != null &&
+          (bestRespiratoryRate == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) => v.respiratoryRate == bestRespiratoryRate,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestRespiratoryRate = vitals.respiratoryRate;
       }
-      
+
       // Heart rate variability
-      if (vitals.heartRateVariability != null && 
-          (bestHeartRateVariability == null || quality > (vitalsList.firstWhere((v) => v.heartRateVariability == bestHeartRateVariability, orElse: () => vitals).dataQuality ?? 0.0))) {
+      if (vitals.heartRateVariability != null &&
+          (bestHeartRateVariability == null ||
+              quality >
+                  (vitalsList
+                          .firstWhere(
+                            (v) =>
+                                v.heartRateVariability ==
+                                bestHeartRateVariability,
+                            orElse: () => vitals,
+                          )
+                          .dataQuality ??
+                      0.0))) {
         bestHeartRateVariability = vitals.heartRateVariability;
       }
-      
+
       // Collect device sources
-      if (vitals.deviceSource != null && !deviceSources.contains(vitals.deviceSource!)) {
+      if (vitals.deviceSource != null &&
+          !deviceSources.contains(vitals.deviceSource!)) {
         if (deviceSources.isNotEmpty) deviceSources += ', ';
         deviceSources += vitals.deviceSource!;
       }
-      
+
       totalQuality += quality;
       qualityCount++;
     }
-    
+
     final averageQuality = qualityCount > 0 ? totalQuality / qualityCount : 0.5;
-    
-    _logger.i('Merged vitals from ${vitalsList.length} sources: $deviceSources');
-    
+
+    _logger.i(
+      'Merged vitals from ${vitalsList.length} sources: $deviceSources',
+    );
+
     return PatientVitals(
       heartRate: bestHeartRate,
       bloodPressure: bestBloodPressure,
@@ -230,52 +307,52 @@ class MultiPlatformHealthService {
   /// Check if any health platforms have permissions
   Future<bool> hasHealthPermissions() async {
     if (!_isInitialized) await initialize();
-    
+
     bool hasAnyPermissions = false;
-    
+
     if (_appleHealth != null) {
       hasAnyPermissions |= await _appleHealth!.hasPermissions();
     }
-    
+
     if (_googleHealth != null) {
       hasAnyPermissions |= await _googleHealth!.hasPermissions();
     }
-    
+
     if (_samsungHealth != null) {
       hasAnyPermissions |= await _samsungHealth!.hasPermissions();
     }
-    
+
     if (_fitbitService != null) {
       hasAnyPermissions |= await _fitbitService!.hasPermissions();
     }
-    
+
     return hasAnyPermissions;
   }
 
   /// Request permissions from all available platforms
   Future<void> requestPermissions() async {
     if (!_isInitialized) await initialize();
-    
+
     final futures = <Future<void>>[];
-    
+
     if (_appleHealth != null) {
       futures.add(_appleHealth!.requestPermissions());
     }
-    
+
     if (_googleHealth != null) {
       futures.add(_googleHealth!.requestPermissions());
     }
-    
+
     if (_samsungHealth != null) {
       futures.add(_samsungHealth!.requestPermissions());
     }
-    
+
     if (_fitbitService != null) {
       futures.add(_fitbitService!.requestPermissions());
     }
-    
+
     await Future.wait(futures);
-    
+
     // Refresh device list after permissions
     await _discoverDevices();
   }
@@ -288,6 +365,172 @@ class MultiPlatformHealthService {
       'Samsung Health': _samsungHealth != null,
       'Fitbit': _fitbitService != null,
     };
+  }
+
+  /// Set current patient for vitals monitoring
+  Future<void> setCurrentPatient(String patientId) async {
+    _currentPatientId = patientId;
+
+    if (_isInitialized) {
+      _startVitalsMonitoring();
+    }
+
+    _logger.i('Current patient set to: $patientId');
+  }
+
+  /// Start continuous vitals monitoring for the current patient
+  void _startVitalsMonitoring() {
+    _vitalsMonitoringTimer?.cancel();
+
+    if (_currentPatientId == null) return;
+
+    _vitalsMonitoringTimer = Timer.periodic(Duration(minutes: 2), (
+      timer,
+    ) async {
+      try {
+        final vitals = await getLatestVitals();
+        if (vitals != null &&
+            _wearableService != null &&
+            _currentPatientId != null) {
+          // Store vitals using the wearable device service
+          await _wearableService!.storeDeviceVitals(
+            patientId: _currentPatientId!,
+            vitals: vitals,
+          );
+
+          _logger.d(
+            'Vitals automatically stored for patient $_currentPatientId',
+          );
+        }
+      } catch (e) {
+        _logger.e('Error in vitals monitoring: $e');
+
+        // If online storage fails, queue for offline sync
+        if (_syncService != null && _currentPatientId != null) {
+          final vitals = await getLatestVitals();
+          if (vitals != null) {
+            await _syncService!.queueVitalsForSync(
+              patientId: _currentPatientId!,
+              vitals: vitals,
+            );
+          }
+        }
+      }
+    });
+
+    _logger.i('Started vitals monitoring for patient $_currentPatientId');
+  }
+
+  /// Stop vitals monitoring
+  void stopVitalsMonitoring() {
+    _vitalsMonitoringTimer?.cancel();
+    _vitalsMonitoringTimer = null;
+    _logger.i('Stopped vitals monitoring');
+  }
+
+  /// Manually sync vitals for current patient
+  Future<void> syncVitalsNow() async {
+    if (_currentPatientId == null) {
+      throw Exception('No current patient set for vitals sync');
+    }
+
+    try {
+      final vitals = await getLatestVitals();
+      if (vitals != null && _wearableService != null) {
+        await _wearableService!.storeDeviceVitals(
+          patientId: _currentPatientId!,
+          vitals: vitals,
+        );
+        _logger.i(
+          'Manual vitals sync completed for patient $_currentPatientId',
+        );
+      } else {
+        _logger.w('No vitals data available for sync');
+      }
+    } catch (e) {
+      _logger.e('Manual vitals sync failed: $e');
+
+      // Queue for offline sync if immediate sync fails
+      if (_syncService != null) {
+        final vitals = await getLatestVitals();
+        if (vitals != null) {
+          await _syncService!.queueVitalsForSync(
+            patientId: _currentPatientId!,
+            vitals: vitals,
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// Get device sync status
+  Future<Map<String, dynamic>> getSyncStatus() async {
+    if (_syncService == null) {
+      return {'error': 'Sync service not initialized'};
+    }
+
+    try {
+      final syncStatus = await _syncService!.getSyncStatus();
+      return {
+        'isOnline': syncStatus.isOnline,
+        'isSyncing': syncStatus.isSyncing,
+        'queuedItems': syncStatus.queuedItems,
+        'lastSyncTime': syncStatus.lastSyncTime?.toIso8601String(),
+        'lastSyncResult': syncStatus.lastSyncResult != null
+            ? {
+                'totalItems': syncStatus.lastSyncResult!.totalItems,
+                'successfulItems': syncStatus.lastSyncResult!.successfulItems,
+                'failedItems': syncStatus.lastSyncResult!.failedItems,
+                'timestamp': syncStatus.lastSyncResult!.timestamp
+                    .toIso8601String(),
+              }
+            : null,
+      };
+    } catch (e) {
+      _logger.e('Failed to get sync status: $e');
+      return {'error': e.toString()};
+    }
+  }
+
+  /// Force sync all queued data
+  Future<void> forceSyncAll() async {
+    if (_syncService == null) {
+      throw Exception('Sync service not initialized');
+    }
+
+    await _syncService!.forcSync();
+    _logger.i('Force sync completed');
+  }
+
+  /// Update device status in Firestore
+  Future<void> updateDeviceStatuses() async {
+    if (_wearableService == null) return;
+
+    try {
+      for (final device in _connectedDevices) {
+        await _wearableService!.updateDeviceStatus(
+          deviceId: device.id,
+          deviceName: device.name,
+          platform: device.platform,
+          isConnected: device.isConnected,
+          lastSync: device.lastSync,
+          batteryLevel: device.batteryLevel,
+          supportedDataTypes: device.supportedDataTypes,
+        );
+      }
+      _logger.i('Updated status for ${_connectedDevices.length} devices');
+    } catch (e) {
+      _logger.e('Failed to update device statuses: $e');
+    }
+  }
+
+  /// Dispose resources
+  void dispose() {
+    _vitalsMonitoringTimer?.cancel();
+    _wearableService?.dispose();
+    _syncService?.dispose();
+    _logger.i('Multi-platform health service disposed');
   }
 }
 
@@ -334,7 +577,12 @@ class AppleHealthService {
         id: 'apple_watch_1',
         name: 'Apple Watch Series 9',
         platform: 'Apple Health',
-        supportedDataTypes: ['heart_rate', 'blood_oxygen', 'temperature', 'blood_pressure'],
+        supportedDataTypes: [
+          'heart_rate',
+          'blood_oxygen',
+          'temperature',
+          'blood_pressure',
+        ],
         isConnected: true,
         lastSync: DateTime.now().subtract(Duration(minutes: 5)),
         batteryLevel: 0.85,
@@ -420,7 +668,12 @@ class SamsungHealthService {
         id: 'galaxy_watch_1',
         name: 'Galaxy Watch6',
         platform: 'Samsung Health',
-        supportedDataTypes: ['heart_rate', 'blood_pressure', 'blood_oxygen', 'temperature'],
+        supportedDataTypes: [
+          'heart_rate',
+          'blood_pressure',
+          'blood_oxygen',
+          'temperature',
+        ],
         isConnected: true,
         lastSync: DateTime.now().subtract(Duration(minutes: 4)),
         batteryLevel: 0.91,
@@ -463,7 +716,12 @@ class FitbitService {
         id: 'fitbit_sense_1',
         name: 'Fitbit Sense 2',
         platform: 'Fitbit',
-        supportedDataTypes: ['heart_rate', 'heart_rate_variability', 'temperature', 'blood_oxygen'],
+        supportedDataTypes: [
+          'heart_rate',
+          'heart_rate_variability',
+          'temperature',
+          'blood_oxygen',
+        ],
         isConnected: true,
         lastSync: DateTime.now().subtract(Duration(minutes: 8)),
         batteryLevel: 0.68,

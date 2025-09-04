@@ -33,7 +33,7 @@ class ApiClient {
     return headers;
   }
 
-  // Watson X.ai API calls
+  // Gemini AI API calls
   Future<ApiResponse> triageAssessment({
     required String symptoms,
     required Map<String, dynamic> vitals,
@@ -53,7 +53,7 @@ class ApiClient {
       _logger.d('Data: $body');
 
       final response = await _client.post(url, headers: _headers, body: body);
-      
+
       _logger.d('RESPONSE: ${response.statusCode} ${url.path}');
       _logger.d('Data: ${response.body}');
 
@@ -79,17 +79,20 @@ class ApiClient {
       final queryParams = {
         'lat': latitude.toString(),
         'lng': longitude.toString(),
-        'radius': (radiusMiles ?? AppConstants.hospitalSearchRadiusMiles).toString(),
+        'radius': (radiusMiles ?? AppConstants.hospitalSearchRadiusMiles)
+            .toString(),
         if (specialization != null) 'specialization': specialization,
       };
-      
-      final url = Uri.parse('${AppConstants.baseUrl}/hospitals').replace(queryParameters: queryParams);
-      
+
+      final url = Uri.parse(
+        '${AppConstants.baseUrl}/hospitals',
+      ).replace(queryParameters: queryParams);
+
       _logger.d('REQUEST: GET ${url.path}');
       _logger.d('Headers: $_headers');
 
       final response = await _client.get(url, headers: _headers);
-      
+
       _logger.d('RESPONSE: ${response.statusCode} ${url.path}');
       _logger.d('Data: ${response.body}');
 
@@ -107,13 +110,15 @@ class ApiClient {
   // Hospital capacity API calls
   Future<ApiResponse> getHospitalCapacity(String hospitalId) async {
     try {
-      final url = Uri.parse('${AppConstants.baseUrl}/hospitals/$hospitalId/capacity');
-      
+      final url = Uri.parse(
+        '${AppConstants.baseUrl}/hospitals/$hospitalId/capacity',
+      );
+
       _logger.d('REQUEST: GET ${url.path}');
       _logger.d('Headers: $_headers');
 
       final response = await _client.get(url, headers: _headers);
-      
+
       _logger.d('RESPONSE: ${response.statusCode} ${url.path}');
       _logger.d('Data: ${response.body}');
 

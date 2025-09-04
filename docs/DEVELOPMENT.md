@@ -62,8 +62,7 @@ Edit the environment files with your configuration:
 
 ```bash
 # .env.development
-WATSONX_API_KEY=your-development-api-key
-WATSONX_PROJECT_ID=your-project-id
+GEMINI_API_KEY=your-development-api-key
 ENVIRONMENT=development
 DEBUG_MODE=true
 LOG_LEVEL=debug
@@ -191,7 +190,7 @@ feat(triage): add vitals-enhanced severity scoring
 fix(health): resolve Apple Health permission issue
 docs(api): update triage endpoint documentation
 test(triage): add unit tests for critical case detection
-refactor(services): improve error handling in WatsonxService
+refactor(services): improve error handling in GeminiService
 ```
 
 ## Code Standards
@@ -217,7 +216,7 @@ Future<TriageResult> assessPatientSymptoms({
   required String symptoms,
   PatientVitals? vitals,
 }) async {
-  final result = await _watsonxService.analyze(symptoms);
+  final result = await _geminiService.analyze(symptoms);
   return _enhanceWithVitals(result, vitals);
 }
 ```
@@ -344,7 +343,7 @@ class TriageException implements Exception {
 }
 
 // Error handling in services
-class WatsonxService {
+class GeminiService {
   Future<TriageResult> assessSymptoms(String symptoms) async {
     try {
       final response = await _dio.post('/assess', data: {'symptoms': symptoms});

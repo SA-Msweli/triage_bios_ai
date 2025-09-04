@@ -36,8 +36,7 @@ graph TB
     end
     
     subgraph "AI Services"
-        WX[watsonx.ai]
-        WD[watsonx.data]
+        GM[Gemini AI]
     end
     
     subgraph "External APIs"
@@ -102,10 +101,8 @@ ENVIRONMENT=development
 DEBUG_MODE=true
 LOG_LEVEL=debug
 
-# IBM watsonx.ai
-WATSONX_API_KEY=your-dev-api-key
-WATSONX_PROJECT_ID=your-project-id
-WATSONX_BASE_URL=https://us-south.ml.cloud.ibm.com
+# Google Gemini AI
+GEMINI_API_KEY=your-dev-api-key
 
 # Database
 DATABASE_URL=sqlite:///data/triage_dev.db
@@ -213,7 +210,7 @@ metadata:
 data:
   ENVIRONMENT: "staging"
   LOG_LEVEL: "info"
-  WATSONX_BASE_URL: "https://us-south.ml.cloud.ibm.com"
+  GEMINI_BASE_URL: "https://generativelanguage.googleapis.com"
   REDIS_URL: "redis://redis-service:6379"
 ```
 
@@ -226,7 +223,7 @@ metadata:
   namespace: triage-staging
 type: Opaque
 data:
-  WATSONX_API_KEY: <base64-encoded-key>
+  GEMINI_API_KEY: <base64-encoded-key>
   DATABASE_PASSWORD: <base64-encoded-password>
   GOOGLE_MAPS_API_KEY: <base64-encoded-key>
 ```
@@ -259,11 +256,11 @@ spec:
             configMapKeyRef:
               name: triage-config
               key: ENVIRONMENT
-        - name: WATSONX_API_KEY
+        - name: GEMINI_API_KEY
           valueFrom:
             secretKeyRef:
               name: triage-secrets
-              key: WATSONX_API_KEY
+              key: GEMINI_API_KEY
         resources:
           requests:
             memory: "512Mi"
@@ -738,7 +735,7 @@ spec:
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(watsonx_response_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.95, rate(gemini_response_duration_seconds_bucket[5m]))",
             "legendFormat": "95th percentile"
           }
         ]
@@ -781,13 +778,13 @@ spec:
         description: "Error rate is {{ $value }} errors per second"
         
     - alert: AIServiceDown
-      expr: up{job="watsonx-service"} == 0
+      expr: up{job="gemini-service"} == 0
       for: 1m
       labels:
         severity: critical
       annotations:
         summary: "AI service is down"
-        description: "watsonx.ai service has been down for more than 1 minute"
+        description: "Gemini AI service has been down for more than 1 minute"
         
     - alert: HighResponseTime
       expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2

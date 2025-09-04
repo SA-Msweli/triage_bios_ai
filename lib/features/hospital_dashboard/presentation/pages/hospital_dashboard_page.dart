@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../config/app_config.dart';
+import '../widgets/live_capacity_monitor_widget.dart';
+import '../widgets/patient_vitals_monitor_widget.dart';
+import '../widgets/notification_overlay_widget.dart';
+import '../widgets/real_time_stats_widget.dart';
+import '../widgets/emergency_alerts_widget.dart';
+import '../../../../shared/services/real_time_monitoring_service.dart';
+import '../../../../shared/services/notification_service.dart';
 
-/// Hospital dashboard for monitoring capacity and patient flow
+/// Hospital dashboard for monitoring capacity and patient flow with real-time updates
 class HospitalDashboard extends StatefulWidget {
   const HospitalDashboard({super.key});
 
@@ -10,9 +16,15 @@ class HospitalDashboard extends StatefulWidget {
 }
 
 class _HospitalDashboardState extends State<HospitalDashboard> {
+  final RealTimeMonitoringService _monitoringService =
+      RealTimeMonitoringService();
+  final NotificationService _notificationService = NotificationService();
+
   List<dynamic> _patientQueue = [];
   Map<String, dynamic> _hospitalStats = {};
   bool _isLoading = true;
+  bool _showRealTimeMonitoring = true;
+  bool _showLegacyStats = false;
 
   @override
   void initState() {
@@ -26,10 +38,14 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
     });
 
     try {
-      // Initialize services
-      // WatsonxService initialization removed
+      // Initialize real-time monitoring services
+      await _notificationService.initialize();
 
-      // Load mock data for demo
+      if (!_monitoringService.isMonitoring) {
+        await _monitoringService.startMonitoring(monitorAllHospitals: true);
+      }
+
+      // Load mock data for demo (legacy support)
       await Future.delayed(const Duration(seconds: 1));
 
       setState(() {
@@ -79,40 +95,127 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
       setState(() {
         _isLoading = false;
       });
-      // Consider logging the error or showing a user-friendly message
-      // print('Error loading dashboard data: $e');
+      debugPrint('Error loading dashboard data: $e');
+
+      // Show error notification
+      _notificationService.showNotification(
+        title: 'Dashboard Error',
+        message: 'Failed to initialize real-time monitoring: ${e.toString()}',
+        severity: AlertSeverity.warning,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hospital Dashboard'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDashboardData,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stats cards
-                  _buildStatsSection(),
-                  const SizedBox(height: 24),
-
-                  // Patient queue
-                  _buildPatientQueue(),
-                ],
+    return NotificationOverlayWidget(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Hospital Dashboard'),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          actions: [
+            IconButton(
+              icon: Icon(
+                _showRealTimeMonitoring
+                    ? Icons.monitor
+                    : Icons.monitor_outlined,
               ),
+              onPressed: () {
+                setState(() {
+                  _showRealTimeMonitoring = !_showRealTimeMonitoring;
+                });
+              },
+              tooltip: 'Toggle real-time monitoring',
             ),
+            IconButton(
+              icon: Icon(
+                _showLegacyStats ? Icons.analytics : Icons.analytics_outlined,
+              ),
+              onPressed: () {
+                setState(() {
+                  _showLegacyStats = !_showLegacyStats;
+                });
+              },
+              tooltip: 'Toggle legacy stats',
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadDashboardData,
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'settings':
+                    _showNotificationSettings();
+                    break;
+                  case 'test_alert':
+                    _testAlert();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings),
+                      SizedBox(width: 8),
+                      Text('Notification Settings'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'test_alert',
+                  child: Row(
+                    children: [
+                      Icon(Icons.notification_add),
+                      SizedBox(width: 8),
+                      Text('Test Alert'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_showRealTimeMonitoring) ...[
+                      // Real-time monitoring overview
+                      const RealTimeStatsWidget(showDetailedStats: true),
+                      const SizedBox(height: 16),
+
+                      // Real-time capacity monitoring
+                      const LiveCapacityMonitorWidget(showAlerts: true),
+                      const SizedBox(height: 16),
+
+                      // Critical patient vitals monitoring
+                      const PatientVitalsMonitorWidget(showCriticalOnly: true),
+                      const SizedBox(height: 24),
+                    ],
+
+                    if (_showLegacyStats) ...[
+                      // Legacy stats cards (for comparison)
+                      _buildStatsSection(),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Patient queue
+                    _buildPatientQueue(),
+
+                    const SizedBox(height: 24),
+
+                    // Patient history section
+                    _buildPatientHistorySection(),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 
@@ -298,5 +401,267 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
         ],
       ),
     );
+  }
+
+  void _showNotificationSettings() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notification Settings'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: const Text('Capacity Alerts'),
+              subtitle: const Text('Hospital capacity warnings'),
+              value: _notificationService.settings.capacityAlertsEnabled,
+              onChanged: (value) {
+                _notificationService.setCapacityAlertsEnabled(value);
+                setState(() {});
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Vitals Alerts'),
+              subtitle: const Text('Patient vitals warnings'),
+              value: _notificationService.settings.vitalsAlertsEnabled,
+              onChanged: (value) {
+                _notificationService.setVitalsAlertsEnabled(value);
+                setState(() {});
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Sound Notifications'),
+              subtitle: const Text('Audio alerts'),
+              value: _notificationService.settings.soundEnabled,
+              onChanged: (value) {
+                _notificationService.setSoundEnabled(value);
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<AlertSeverity>(
+              decoration: const InputDecoration(
+                labelText: 'Minimum Alert Level',
+                border: OutlineInputBorder(),
+              ),
+              value: _notificationService.settings.minimumSeverity,
+              items: AlertSeverity.values.map((severity) {
+                return DropdownMenuItem(
+                  value: severity,
+                  child: Text(severity.name.toUpperCase()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  _notificationService.setMinimumSeverity(value);
+                  setState(() {});
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientHistorySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Patient History Access',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/patient-history');
+              },
+              icon: const Icon(Icons.history),
+              label: const Text('View Full History'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Access patient triage history with real-time updates and advanced filtering',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          _showQuickPatientSearch();
+                        },
+                        icon: const Icon(Icons.search),
+                        label: const Text('Quick Patient Search'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/patient-history');
+                        },
+                        icon: const Icon(Icons.history),
+                        label: const Text('Browse History'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showQuickPatientSearch() {
+    final TextEditingController patientIdController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Quick Patient Search'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: patientIdController,
+              decoration: const InputDecoration(
+                hintText: 'Enter Patient ID',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_search),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Example patient IDs:',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: ['patient_001', 'patient_002', 'patient_003']
+                  .map(
+                    (id) => ActionChip(
+                      label: Text(id),
+                      onPressed: () {
+                        patientIdController.text = id;
+                      },
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final patientId = patientIdController.text.trim();
+              if (patientId.isNotEmpty) {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(
+                  '/patient-history',
+                  arguments: {'patientId': patientId},
+                );
+              }
+            },
+            child: const Text('View History'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _testAlert() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Alert'),
+        content: const Text('Choose an alert type to test:'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _notificationService.showNotification(
+                title: 'Test Critical Alert',
+                message: 'This is a test critical alert notification',
+                severity: AlertSeverity.critical,
+              );
+            },
+            child: const Text('Critical'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _notificationService.showNotification(
+                title: 'Test Warning Alert',
+                message: 'This is a test warning alert notification',
+                severity: AlertSeverity.warning,
+              );
+            },
+            child: const Text('Warning'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _notificationService.showNotification(
+                title: 'Test Info Alert',
+                message: 'This is a test info alert notification',
+                severity: AlertSeverity.info,
+              );
+            },
+            child: const Text('Info'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Clean up monitoring service if needed
+    super.dispose();
   }
 }

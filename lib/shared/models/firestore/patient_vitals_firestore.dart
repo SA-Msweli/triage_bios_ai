@@ -134,6 +134,56 @@ class PatientVitalsFirestore extends Equatable {
     };
   }
 
+  /// Create from domain entity
+  factory PatientVitalsFirestore.fromDomain(dynamic domainVitals) {
+    return PatientVitalsFirestore(
+      id: '', // Will be set by Firestore
+      patientId: domainVitals.patientId ?? 'unknown',
+      deviceId: domainVitals.deviceId,
+      heartRate: domainVitals.heartRate,
+      bloodPressureSystolic: domainVitals.bloodPressureSystolic,
+      bloodPressureDiastolic: domainVitals.bloodPressureDiastolic,
+      oxygenSaturation: domainVitals.oxygenSaturation,
+      temperature: domainVitals.temperature,
+      respiratoryRate: domainVitals.respiratoryRate,
+      source: _mapSourceFromDomain(domainVitals.source),
+      accuracy: domainVitals.accuracy ?? 1.0,
+      timestamp: domainVitals.timestamp ?? DateTime.now(),
+      isValidated: domainVitals.isValidated ?? false,
+    );
+  }
+
+  /// Convert to domain entity
+  dynamic toDomain() {
+    // This would return the appropriate domain entity
+    // For now, returning a map representation
+    return {
+      'id': id,
+      'patientId': patientId,
+      'deviceId': deviceId,
+      'heartRate': heartRate,
+      'bloodPressureSystolic': bloodPressureSystolic,
+      'bloodPressureDiastolic': bloodPressureDiastolic,
+      'oxygenSaturation': oxygenSaturation,
+      'temperature': temperature,
+      'respiratoryRate': respiratoryRate,
+      'source': source,
+      'accuracy': accuracy,
+      'timestamp': timestamp,
+      'isValidated': isValidated,
+    };
+  }
+
+  static VitalsSource _mapSourceFromDomain(dynamic domainSource) {
+    if (domainSource == null) return VitalsSource.manual;
+
+    final sourceStr = domainSource.toString().toLowerCase();
+    if (sourceStr.contains('apple')) return VitalsSource.appleHealth;
+    if (sourceStr.contains('google')) return VitalsSource.googleFit;
+    if (sourceStr.contains('device')) return VitalsSource.device;
+    return VitalsSource.manual;
+  }
+
   PatientVitalsFirestore copyWith({
     String? id,
     String? patientId,

@@ -7,15 +7,18 @@ import '../../data/services/hospital_service.dart';
 import '../../../../shared/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/constrained_responsive_container.dart';
 import '../../../../shared/utils/overflow_detection.dart';
+import '../../../../shared/models/hospital_capacity.dart';
 
 class HospitalMapWidget extends StatefulWidget {
   final double? severityScore;
   final Function(Hospital)? onHospitalSelected;
+  final List<HospitalCapacity>? hospitals; // Accept hospitals from parent
 
   const HospitalMapWidget({
     super.key,
     this.severityScore,
     this.onHospitalSelected,
+    this.hospitals,
   });
 
   @override
@@ -110,6 +113,15 @@ class _HospitalMapWidgetState extends State<HospitalMapWidget> {
   }
 
   Future<void> _loadNearbyHospitals() async {
+    // Use provided hospitals if available, otherwise load from service
+    if (widget.hospitals != null && widget.hospitals!.isNotEmpty) {
+      _hospitals = widget.hospitals!
+          .map((hc) => Hospital.fromHospitalCapacity(hc))
+          .toList();
+      _logger.i('Using provided ${_hospitals.length} hospitals');
+      return;
+    }
+
     final lat = _currentPosition?.latitude ?? _defaultLocation.latitude;
     final lng = _currentPosition?.longitude ?? _defaultLocation.longitude;
 
