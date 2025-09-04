@@ -169,14 +169,14 @@ class OfflineSupportService {
       // Configure offline persistence with optimized settings
       if (!kIsWeb) {
         // Mobile platforms support full offline persistence
-        await firestore.enablePersistence(
-          const PersistenceSettings(synchronizeTabs: true),
+        firestore.settings = Settings(
+          persistenceEnabled: true,
         );
         _logger.i('Firestore offline persistence enabled for mobile');
       } else {
         // Web platform has limited offline support
-        await firestore.enablePersistence(
-          const PersistenceSettings(synchronizeTabs: true),
+        firestore.settings = Settings(
+          persistenceEnabled: true,
         );
         _logger.i('Firestore offline persistence enabled for web');
       }

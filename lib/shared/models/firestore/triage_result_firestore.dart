@@ -1,5 +1,56 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+import 'package:triage_bios_ai/features/triage/domain/entities/triage_result.dart' as domain;
+
+/// Urgency levels for triage assessment
+enum UrgencyLevel {
+  nonUrgent,
+  standard,
+  urgent,
+  critical;
+
+  factory UrgencyLevel.fromString(String value) {
+    switch (value.toUpperCase()) {
+      case 'NON_URGENT':
+        return UrgencyLevel.nonUrgent;
+      case 'STANDARD':
+        return UrgencyLevel.standard;
+      case 'URGENT':
+        return UrgencyLevel.urgent;
+      case 'CRITICAL':
+        return UrgencyLevel.critical;
+      default:
+        return UrgencyLevel.standard;
+    }
+  }
+
+  @override
+  String toString() {
+    switch (this) {
+      case UrgencyLevel.nonUrgent:
+        return 'NON_URGENT';
+      case UrgencyLevel.standard:
+        return 'STANDARD';
+      case UrgencyLevel.urgent:
+        return 'URGENT';
+      case UrgencyLevel.critical:
+        return 'CRITICAL';
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case UrgencyLevel.nonUrgent:
+        return 'Non-Urgent';
+      case UrgencyLevel.standard:
+        return 'Standard';
+      case UrgencyLevel.urgent:
+        return 'Urgent';
+      case UrgencyLevel.critical:
+        return 'Critical';
+    }
+  }
+}
 
 /// Firestore model for triage assessment results
 class TriageResultFirestore extends Equatable {
@@ -101,6 +152,48 @@ class TriageResultFirestore extends Equatable {
     };
   }
 
+  /// Create from JSON
+  factory TriageResultFirestore.fromJson(Map<String, dynamic> json) {
+    return TriageResultFirestore(
+      id: json['id'] as String,
+      patientId: json['patientId'] as String,
+      sessionId: json['sessionId'] as String,
+      symptoms: json['symptoms'] as String,
+      severityScore: (json['severityScore'] as num).toDouble(),
+      urgencyLevel: UrgencyLevel.fromString(json['urgencyLevel'] as String),
+      aiReasoning: json['aiReasoning'] as String,
+      recommendedActions: List<String>.from(json['recommendedActions'] as List),
+      vitalsContribution: (json['vitalsContribution'] as num).toDouble(),
+      confidence: (json['confidence'] as num).toDouble(),
+      recommendedHospitalId: json['recommendedHospitalId'] as String?,
+      estimatedWaitTime: (json['estimatedWaitTime'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      geminiModelVersion: json['geminiModelVersion'] as String? ?? 'gemini-1.5-flash',
+    );
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'patientId': patientId,
+      'sessionId': sessionId,
+      'symptoms': symptoms,
+      'severityScore': severityScore,
+      'urgencyLevel': urgencyLevel.toString(),
+      'aiReasoning': aiReasoning,
+      'recommendedActions': recommendedActions,
+      'vitalsContribution': vitalsContribution,
+      'confidence': confidence,
+      if (recommendedHospitalId != null) 'recommendedHospitalId': recommendedHospitalId,
+      if (estimatedWaitTime != null) 'estimatedWaitTime': estimatedWaitTime,
+      'createdAt': createdAt.toIso8601String(),
+      'geminiModelVersion': geminiModelVersion,
+      'isCritical': isCritical,
+      'isUrgent': isUrgent,
+    };
+  }
+
   /// Create from domain entity
   factory TriageResultFirestore.fromDomain(dynamic domainResult) {
     return TriageResultFirestore(
@@ -130,9 +223,45 @@ class TriageResultFirestore extends Equatable {
   }
 
   /// Convert to domain entity
-  dynamic toDomain() {
-    // This would return the appropriate domain entity
-    // For now, returning a map representation
+  domain.TriageResult toDomain() {
+    // Map Firestore UrgencyLevel to domain UrgencyLevel
+    domain.UrgencyLevel domainUrgencyLevel;
+    switch (urgencyLevel) {
+      case UrgencyLevel.critical:
+        domainUrgencyLevel = domain.UrgencyLevel.critical;
+        break;
+      case UrgencyLevel.urgent:
+        domainUrgencyLevel = domain.UrgencyLevel.urgent;
+        break;
+      case UrgencyLevel.standard:
+        domainUrgencyLevel = domain.UrgencyLevel.standard;
+        break;
+      case UrgencyLevel.nonUrgent:
+        domainUrgencyLevel = domain.UrgencyLevel.nonUrgent;
+        break;
+    }
+
+    return domain.TriageResult(
+      assessmentId: sessionId,
+      severityScore: severityScore,
+      confidenceLower: confidence - 0.1,
+      confidenceUpper: confidence + 0.1,
+      urgencyLevel: domainUrgencyLevel,
+      explanation: aiReasoning,
+      symptoms: symptoms,
+      keySymptoms: [], // Not stored in Firestore model
+      concerningFindings: [], // Not stored in Firestore model
+      recommendedActions: recommendedActions,
+      vitals: null, // Would need to be fetched separately
+      vitalsContribution: vitalsContribution,
+      aiModelVersion: geminiModelVersion,
+      timestamp: createdAt,
+    );
+  }
+
+  /// Convert to domain entity map (for compatibility)
+  Map<String, dynamic> toDomainMap() {
+    // Return a map representation for compatibility
     return {
       'id': id,
       'assessmentId': sessionId,
@@ -220,51 +349,4 @@ class TriageResultFirestore extends Equatable {
   ];
 }
 
-enum UrgencyLevel {
-  nonUrgent,
-  standard,
-  urgent,
-  critical;
 
-  factory UrgencyLevel.fromString(String value) {
-    switch (value.toUpperCase()) {
-      case 'NON_URGENT':
-        return UrgencyLevel.nonUrgent;
-      case 'STANDARD':
-        return UrgencyLevel.standard;
-      case 'URGENT':
-        return UrgencyLevel.urgent;
-      case 'CRITICAL':
-        return UrgencyLevel.critical;
-      default:
-        return UrgencyLevel.standard;
-    }
-  }
-
-  @override
-  String toString() {
-    switch (this) {
-      case UrgencyLevel.nonUrgent:
-        return 'NON_URGENT';
-      case UrgencyLevel.standard:
-        return 'STANDARD';
-      case UrgencyLevel.urgent:
-        return 'URGENT';
-      case UrgencyLevel.critical:
-        return 'CRITICAL';
-    }
-  }
-
-  String get displayName {
-    switch (this) {
-      case UrgencyLevel.nonUrgent:
-        return 'Non-Urgent';
-      case UrgencyLevel.standard:
-        return 'Standard';
-      case UrgencyLevel.urgent:
-        return 'Urgent';
-      case UrgencyLevel.critical:
-        return 'Critical';
-    }
-  }
-}

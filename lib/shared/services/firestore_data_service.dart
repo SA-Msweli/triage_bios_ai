@@ -27,6 +27,7 @@ class FirestoreDataService {
   static const String _vitalsCollection = 'patient_vitals';
   static const String _triageResultsCollection = 'triage_results';
   static const String _patientConsentsCollection = 'patient_consents';
+  static const String _deviceDataCollection = 'device_data';
 
   // ============================================================================
   // HOSPITAL MANAGEMENT
@@ -977,7 +978,7 @@ class FirestoreDataService {
   Future<String> storePatientConsent(PatientConsentFirestore consent) async {
     try {
       final docRef = await _firestore
-          .collection(_consentsCollection)
+          .collection(_patientConsentsCollection)
           .add(consent.toFirestore());
 
       _logger.i(
@@ -996,7 +997,7 @@ class FirestoreDataService {
   ) async {
     try {
       final querySnapshot = await _firestore
-          .collection(_consentsCollection)
+          .collection(_patientConsentsCollection)
           .where('patientId', isEqualTo: patientId)
           .where('isActive', isEqualTo: true)
           .orderBy('grantedAt', descending: true)
@@ -1024,7 +1025,7 @@ class FirestoreDataService {
   }) async {
     try {
       Query query = _firestore
-          .collection(_consentsCollection)
+          .collection(_patientConsentsCollection)
           .where('patientId', isEqualTo: patientId);
 
       if (consentType != null) {
@@ -1050,10 +1051,13 @@ class FirestoreDataService {
   /// Revoke patient consent
   Future<void> revokeConsent(String consentId) async {
     try {
-      await _firestore.collection(_consentsCollection).doc(consentId).update({
-        'revokedAt': FieldValue.serverTimestamp(),
-        'isActive': false,
-      });
+      await _firestore
+          .collection(_patientConsentsCollection)
+          .doc(consentId)
+          .update({
+            'revokedAt': FieldValue.serverTimestamp(),
+            'isActive': false,
+          });
 
       _logger.i('Patient consent revoked: $consentId');
     } catch (e) {
@@ -1508,7 +1512,6 @@ class FirestoreDataService {
 
   // Additional collection names for device data
   static const String _consentsCollection = 'patient_consents';
-  static const String _deviceDataCollection = 'device_data';
 
   // ============================================================================
   // DATA MIGRATION HELPERS
@@ -1924,6 +1927,47 @@ class FirestoreDataService {
     }
   }
 
+  /// Get patient triage results from Firestore
+  Future<List<TriageResultFirestore>> getPatientTriageResults(
+    String patientId, {
+    int limit = 5,
+    DateTime? startDate,
+    DateTime? endDate,
+    UrgencyLevel? urgencyLevel,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection(_triageResultsCollection)
+          .where('patientId', isEqualTo: patientId);
+
+      if (startDate != null) {
+        query = query.where('createdAt', isGreaterThanOrEqualTo: startDate);
+      }
+
+      if (endDate != null) {
+        query = query.where('createdAt', isLessThanOrEqualTo: endDate);
+      }
+
+      if (urgencyLevel != null) {
+        query = query.where('urgencyLevel', isEqualTo: urgencyLevel.toString());
+      }
+
+      query = query.orderBy('createdAt', descending: true).limit(limit);
+
+      final querySnapshot = await query.get();
+      return querySnapshot.docs
+          .map(
+            (doc) => TriageResultFirestore.fromFirestore(
+              doc as DocumentSnapshot<Map<String, dynamic>>,
+            ),
+          )
+          .toList();
+    } catch (e) {
+      _logger.e('Failed to get patient triage results from Firestore: $e');
+      return [];
+    }
+  }
+
   /// Get triage results from Firestore
   Future<List<TriageResultFirestore>> getTriageResults(
     String patientId, {
@@ -2191,6 +2235,60 @@ class FirestoreDataService {
     }
   }
 
+  /// Validate device data quality and trigger alerts if needed
+  Future<bool> validateDeviceDataQuality(
+    String deviceId,
+    PatientVitalsFirestore vitals,
+  ) async {
+    try {
+      // Get recent device quality data
+      final recentQuality = await _firestore
+          .collection('device_quality_logs')
+          .where('deviceId', isEqualTo: deviceId)
+          .orderBy('timestamp', descending: true)
+          .limit(5)
+          .get();
+
+      if (recentQuality.docs.isEmpty) {
+        _logger.w('No device quality data found for device: $deviceId');
+        return false;
+      }
+
+      final qualityLogs = recentQuality.docs
+          .map((doc) => DeviceQualityLog.fromFirestore(doc))
+          .toList();
+
+      // Check for quality issues
+      final avgQuality =
+          qualityLogs.fold<double>(
+            0,
+            (sum, log) => sum + log.dataQualityScore,
+          ) /
+          qualityLogs.length;
+
+      final hasLowBattery = qualityLogs.any(
+        (log) => (log.batteryLevel ?? 100) < 20,
+      );
+      final hasWeakSignal = qualityLogs.any(
+        (log) => (log.signalStrength ?? 1.0) < 0.5,
+      );
+      final needsCalibration = qualityLogs.any(
+        (log) =>
+            log.lastCalibration == null ||
+            DateTime.now().difference(log.lastCalibration!).inDays > 30,
+      );
+
+      // Return true if quality is good
+      return !(avgQuality < 0.7 ||
+          hasLowBattery ||
+          hasWeakSignal ||
+          needsCalibration);
+    } catch (e) {
+      _logger.e('Failed to validate device data quality: $e');
+      return false;
+    }
+  }
+
   /// Get device quality history for a patient
   Future<List<DeviceQualityLog>> getDeviceQualityHistory(
     String patientId, {
@@ -2210,7 +2308,11 @@ class FirestoreDataService {
 
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => DeviceQualityLog.fromFirestore(doc))
+          .map(
+            (doc) => DeviceQualityLog.fromFirestore(
+              doc as DocumentSnapshot<Map<String, dynamic>>,
+            ),
+          )
           .toList();
     } catch (e) {
       _logger.e('Failed to get device quality history: $e');
@@ -2249,10 +2351,77 @@ class PatientHistoryData {
     );
   }
 
-  bool get isEmpty => vitals.isEmpty && triageResults.isEmpty && consents.isEmpty;
+  bool get isEmpty =>
+      vitals.isEmpty && triageResults.isEmpty && consents.isEmpty;
   bool get hasVitals => vitals.isNotEmpty;
   bool get hasTriageResults => triageResults.isNotEmpty;
   bool get hasConsents => consents.isNotEmpty;
+
+  // Additional computed properties
+  TriageResultFirestore? get latestTriageResult =>
+      triageResults.isNotEmpty ? triageResults.first : null;
+
+  PatientVitalsFirestore? get latestVitals =>
+      vitals.isNotEmpty ? vitals.first : null;
+
+  List<PatientConsentFirestore> get activeConsents =>
+      consents.where((consent) => consent.isActive).toList();
+
+  bool get hasCriticalCases => triageResults.any((result) => result.isCritical);
+
+  double get averageSeverityScore {
+    if (triageResults.isEmpty) return 0.0;
+    final total = triageResults.fold<double>(
+      0.0,
+      (sum, result) => sum + result.severityScore,
+    );
+    return total / triageResults.length;
+  }
+
+  VitalsTrend get vitalsTrend {
+    if (vitals.length < 2) return VitalsTrend.stable;
+
+    // Simple trend analysis based on heart rate
+    final recent = vitals.take(3).toList();
+    final older = vitals.skip(3).take(3).toList();
+
+    if (recent.isEmpty || older.isEmpty) return VitalsTrend.stable;
+
+    final recentAvg =
+        recent.fold<double>(0.0, (sum, v) => sum + (v.heartRate ?? 0)) /
+        recent.length;
+
+    final olderAvg =
+        older.fold<double>(0.0, (sum, v) => sum + (v.heartRate ?? 0)) /
+        older.length;
+
+    final diff = recentAvg - olderAvg;
+    if (diff > 10) return VitalsTrend.worsening;
+    if (diff < -10) return VitalsTrend.improving;
+    return VitalsTrend.stable;
+  }
+
+  int get length => triageResults.length;
+  bool get isNotEmpty => !isEmpty;
+  TriageResultFirestore get first => triageResults.first;
+}
+
+/// Vitals trend analysis
+enum VitalsTrend {
+  improving,
+  stable,
+  worsening;
+
+  String get displayName {
+    switch (this) {
+      case VitalsTrend.improving:
+        return 'Improving';
+      case VitalsTrend.stable:
+        return 'Stable';
+      case VitalsTrend.worsening:
+        return 'Worsening';
+    }
+  }
 }
 
 /// Device data quality metrics
@@ -2325,8 +2494,9 @@ class DeviceQualityLog {
       dataQualityScore: (data['dataQualityScore'] as num).toDouble(),
       calibrationStatus: data['calibrationStatus'] as String,
       sensorAccuracy: Map<String, double>.from(
-        (data['sensorAccuracy'] as Map<String, dynamic>? ?? {})
-            .map((k, v) => MapEntry(k, (v as num).toDouble())),
+        (data['sensorAccuracy'] as Map<String, dynamic>? ?? {}).map(
+          (k, v) => MapEntry(k, (v as num).toDouble()),
+        ),
       ),
       connectionStability: (data['connectionStability'] as num).toDouble(),
       lastCalibration: (data['lastCalibration'] as Timestamp?)?.toDate(),
@@ -2373,124 +2543,6 @@ class ConsentAuditLog {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       details: Map<String, dynamic>.from(data['details'] as Map),
     );
-  }
-}'deviceId', isEqualTo: deviceId);
-      }
-
-      query = query.orderBy('timestamp', descending: true).limit(limit);
-
-      final querySnapshot = await query.get();
-      return querySnapshot.docs
-          .map(
-            (doc) => DeviceQualityLog.fromFirestore(
-              doc as DocumentSnapshot<Map<String, dynamic>>,
-            ),
-          )
-          .toList();
-    } catch (e) {
-      _logger.e('Failed to get device quality history: $e');
-      return [];
-    }
-  }
-
-  /// Validate device data quality and trigger alerts if needed
-  Future<bool> validateDeviceDataQuality(
-    String deviceId,
-    PatientVitalsFirestore vitals,
-  ) async {
-    try {
-      // Get recent device quality data
-      final recentQuality = await _firestore
-          .collection('device_quality_logs')
-          .where('deviceId', isEqualTo: deviceId)
-          .orderBy('timestamp', descending: true)
-          .limit(5)
-          .get();
-
-      if (recentQuality.docs.isEmpty) {
-        _logger.w('No device quality data found for device: $deviceId');
-        return false;
-      }
-
-      final qualityLogs = recentQuality.docs
-          .map((doc) => DeviceQualityLog.fromFirestore(doc))
-          .toList();
-
-      // Check for quality issues
-      final avgQuality =
-          qualityLogs.fold<double>(
-            0,
-            (sum, log) => sum + log.dataQualityScore,
-          ) /
-          qualityLogs.length;
-
-      final hasLowBattery = qualityLogs.any((log) => log.batteryLevel < 20);
-      final hasWeakSignal = qualityLogs.any((log) => log.signalStrength < 0.5);
-      final needsCalibration = qualityLogs.any(
-        (log) =>
-            log.lastCalibration == null ||
-            DateTime.now().difference(log.lastCalibration!).inDays > 30,
-      );
-
-      // Trigger alerts if quality is poor
-      if (avgQuality < 0.7 ||
-          hasLowBattery ||
-          hasWeakSignal ||
-          needsCalibration) {
-        await _createDeviceQualityAlert(
-          deviceId: deviceId,
-          patientId: vitals.patientId,
-          issues: {
-            'lowQuality': avgQuality < 0.7,
-            'lowBattery': hasLowBattery,
-            'weakSignal': hasWeakSignal,
-            'needsCalibration': needsCalibration,
-          },
-          averageQuality: avgQuality,
-        );
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      _logger.e('Failed to validate device data quality: $e');
-      return false;
-    }
-  }
-
-  /// Create device quality alert
-  Future<void> _createDeviceQualityAlert({
-    required String deviceId,
-    required String patientId,
-    required Map<String, bool> issues,
-    required double averageQuality,
-  }) async {
-    try {
-      await _firestore.collection('device_quality_alerts').add({
-        'deviceId': deviceId,
-        'patientId': patientId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'issues': issues,
-        'averageQuality': averageQuality,
-        'severity': _calculateAlertSeverity(issues, averageQuality),
-        'resolved': false,
-      });
-
-      _logger.w('Device quality alert created for device: $deviceId');
-    } catch (e) {
-      _logger.e('Failed to create device quality alert: $e');
-    }
-  }
-
-  /// Calculate alert severity based on issues
-  String _calculateAlertSeverity(Map<String, bool> issues, double avgQuality) {
-    if (avgQuality < 0.5 || issues['lowBattery'] == true) {
-      return 'HIGH';
-    } else if (avgQuality < 0.7 || issues['weakSignal'] == true) {
-      return 'MEDIUM';
-    } else {
-      return 'LOW';
-    }
   }
 }
 
@@ -2611,367 +2663,5 @@ class CapacityAnalytics {
       hospitalsAtCapacity: 0,
       averageWaitTime: 0.0,
     );
-  }
-}
-
-class PatientHistoryData {
-  final String patientId;
-  final List<PatientVitalsFirestore> vitals;
-  final List<TriageResultFirestore> triageResults;
-  final List<PatientConsentFirestore> consents;
-  final DateTime retrievedAt;
-
-  PatientHistoryData({
-    required this.patientId,
-    required this.vitals,
-    required this.triageResults,
-    required this.consents,
-    required this.retrievedAt,
-  });
-
-  factory PatientHistoryData.empty(String patientId) {
-    return PatientHistoryData(
-      patientId: patientId,
-      vitals: [],
-      triageResults: [],
-      consents: [],
-      retrievedAt: DateTime.now(),
-    );
-  }
-
-  /// Get the most recent vitals
-  PatientVitalsFirestore? get latestVitals {
-    return vitals.isNotEmpty ? vitals.first : null;
-  }
-
-  /// Get the most recent triage result
-  TriageResultFirestore? get latestTriageResult {
-    return triageResults.isNotEmpty ? triageResults.first : null;
-  }
-
-  /// Get active consents
-  List<PatientConsentFirestore> get activeConsents {
-    return consents.where((consent) => consent.isValid).toList();
-  }
-
-  /// Check if patient has any critical cases
-  bool get hasCriticalCases {
-    return triageResults.any((result) => result.isCritical);
-  }
-
-  /// Get average severity score
-  double get averageSeverityScore {
-    if (triageResults.isEmpty) return 0.0;
-    return triageResults.fold<double>(
-          0,
-          (sum, result) => sum + result.severityScore,
-        ) /
-        triageResults.length;
-  }
-
-  /// Get vitals severity trend (improving, stable, worsening)
-  VitalsTrend get vitalsTrend {
-    if (vitals.length < 2) return VitalsTrend.stable;
-
-    final recent = vitals.take(3).toList();
-    final scores = recent.map((v) => v.vitalsSeverityScore).toList();
-
-    if (scores.length < 2) return VitalsTrend.stable;
-
-    final recentAvg = scores.take(2).reduce((a, b) => a + b) / 2;
-    final olderAvg =
-        scores.skip(1).reduce((a, b) => a + b) / (scores.length - 1);
-
-    if (recentAvg > olderAvg + 0.5) return VitalsTrend.worsening;
-    if (recentAvg < olderAvg - 0.5) return VitalsTrend.improving;
-    return VitalsTrend.stable;
-  }
-}
-
-enum VitalsTrend {
-  improving,
-  stable,
-  worsening;
-
-  String get displayName {
-    switch (this) {
-      case VitalsTrend.improving:
-        return 'Improving';
-      case VitalsTrend.stable:
-        return 'Stable';
-      case VitalsTrend.worsening:
-        return 'Worsening';
-    }
-  }
-}
-
-class ConsentAuditLog {
-  final String id;
-  final String consentId;
-  final String action;
-  final String patientId;
-  final String providerId;
-  final String blockchainTxId;
-  final String ipAddress;
-  final DateTime timestamp;
-  final Map<String, dynamic> details;
-
-  ConsentAuditLog({
-    required this.id,
-    required this.consentId,
-    required this.action,
-    required this.patientId,
-    required this.providerId,
-    required this.blockchainTxId,
-    required this.ipAddress,
-    required this.timestamp,
-    required this.details,
-  });
-
-  factory ConsentAuditLog.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
-    final data = snapshot.data()!;
-    return ConsentAuditLog(
-      id: snapshot.id,
-      consentId: data['consentId'] as String,
-      action: data['action'] as String,
-      patientId: data['patientId'] as String,
-      providerId: data['providerId'] as String,
-      blockchainTxId: data['blockchainTxId'] as String,
-      ipAddress: data['ipAddress'] as String,
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
-      details: Map<String, dynamic>.from(data['details'] as Map),
-    );
-  }
-}
-
-class DeviceDataQuality {
-  final double overallAccuracy;
-  final bool isValidated;
-  final double batteryLevel;
-  final double signalStrength;
-  final double dataQualityScore;
-  final String calibrationStatus;
-  final Map<String, double> sensorAccuracy;
-  final double connectionStability;
-  final DateTime? lastCalibration;
-
-  DeviceDataQuality({
-    required this.overallAccuracy,
-    required this.isValidated,
-    required this.batteryLevel,
-    required this.signalStrength,
-    required this.dataQualityScore,
-    required this.calibrationStatus,
-    required this.sensorAccuracy,
-    required this.connectionStability,
-    this.lastCalibration,
-  });
-
-  factory DeviceDataQuality.fromDevice(Map<String, dynamic> deviceData) {
-    return DeviceDataQuality(
-      overallAccuracy: (deviceData['accuracy'] as num?)?.toDouble() ?? 0.95,
-      isValidated: deviceData['isValidated'] as bool? ?? false,
-      batteryLevel: (deviceData['batteryLevel'] as num?)?.toDouble() ?? 100.0,
-      signalStrength: (deviceData['signalStrength'] as num?)?.toDouble() ?? 1.0,
-      dataQualityScore:
-          (deviceData['dataQualityScore'] as num?)?.toDouble() ?? 0.9,
-      calibrationStatus:
-          deviceData['calibrationStatus'] as String? ?? 'UNKNOWN',
-      sensorAccuracy: Map<String, double>.from(
-        deviceData['sensorAccuracy'] as Map? ?? {},
-      ),
-      connectionStability:
-          (deviceData['connectionStability'] as num?)?.toDouble() ?? 1.0,
-      lastCalibration: deviceData['lastCalibration'] != null
-          ? DateTime.parse(deviceData['lastCalibration'] as String)
-          : null,
-    );
-  }
-
-  bool get isHighQuality => dataQualityScore >= 0.8 && batteryLevel > 20;
-  bool get needsCalibration =>
-      calibrationStatus != 'CALIBRATED' ||
-      (lastCalibration != null &&
-          DateTime.now().difference(lastCalibration!).inDays > 30);
-}
-
-class DeviceQualityLog {
-  final String id;
-  final String deviceId;
-  final String patientId;
-  final String vitalsId;
-  final DateTime timestamp;
-  final double batteryLevel;
-  final double signalStrength;
-  final double dataQualityScore;
-  final String calibrationStatus;
-  final Map<String, double> sensorAccuracy;
-  final double connectionStability;
-  final DateTime? lastCalibration;
-
-  DeviceQualityLog({
-    required this.id,
-    required this.deviceId,
-    required this.patientId,
-    required this.vitalsId,
-    required this.timestamp,
-    required this.batteryLevel,
-    required this.signalStrength,
-    required this.dataQualityScore,
-    required this.calibrationStatus,
-    required this.sensorAccuracy,
-    required this.connectionStability,
-    this.lastCalibration,
-  });
-
-  factory DeviceQualityLog.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
-    final data = snapshot.data()!;
-    return DeviceQualityLog(
-      id: snapshot.id,
-      deviceId: data['deviceId'] as String,
-      patientId: data['patientId'] as String,
-      vitalsId: data['vitalsId'] as String,
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
-      batteryLevel: (data['batteryLevel'] as num).toDouble(),
-      signalStrength: (data['signalStrength'] as num).toDouble(),
-      dataQualityScore: (data['dataQualityScore'] as num).toDouble(),
-      calibrationStatus: data['calibrationStatus'] as String,
-      sensorAccuracy: Map<String, double>.from(
-        data['sensorAccuracy'] as Map? ?? {},
-      ),
-      connectionStability: (data['connectionStability'] as num).toDouble(),
-      lastCalibration: (data['lastCalibration'] as Timestamp?)?.toDate(),
-    );
-  }
-}
-
-class TriageAnalytics {
-  final int totalCases;
-  final int criticalCases;
-  final int urgentCases;
-  final int standardCases;
-  final int nonUrgentCases;
-  final double averageSeverityScore;
-  final double averageConfidence;
-
-  TriageAnalytics({
-    required this.totalCases,
-    required this.criticalCases,
-    required this.urgentCases,
-    required this.standardCases,
-    required this.nonUrgentCases,
-    required this.averageSeverityScore,
-    required this.averageConfidence,
-  });
-
-  factory TriageAnalytics.fromResults(List<TriageResultFirestore> results) {
-    if (results.isEmpty) return TriageAnalytics.empty();
-
-    final critical = results
-        .where((r) => r.urgencyLevel == UrgencyLevel.critical)
-        .length;
-    final urgent = results
-        .where((r) => r.urgencyLevel == UrgencyLevel.urgent)
-        .length;
-    final standard = results
-        .where((r) => r.urgencyLevel == UrgencyLevel.standard)
-        .length;
-    final nonUrgent = results
-        .where((r) => r.urgencyLevel == UrgencyLevel.nonUrgent)
-        .length;
-    final avgSeverity =
-        results.fold<double>(
-          0,
-          (currentSum, r) => currentSum + r.severityScore,
-        ) /
-        results.length;
-    final avgConfidence =
-        results.fold<double>(0, (currentSum, r) => currentSum + r.confidence) /
-        results.length;
-
-    return TriageAnalytics(
-      totalCases: results.length,
-      criticalCases: critical,
-      urgentCases: urgent,
-      standardCases: standard,
-      nonUrgentCases: nonUrgent,
-      averageSeverityScore: avgSeverity,
-      averageConfidence: avgConfidence,
-    );
-  }
-
-  factory TriageAnalytics.empty() {
-    return TriageAnalytics(
-      totalCases: 0,
-      criticalCases: 0,
-      urgentCases: 0,
-      standardCases: 0,
-      nonUrgentCases: 0,
-      averageSeverityScore: 0.0,
-      averageConfidence: 0.0,
-    );
-  }
-}
-
-  // ============================================================================
-  // PATIENT DATA PERSISTENCE METHODS
-  // ============================================================================
-
-  /// Store patient vitals in Firestore
-  Future<void> storePatientVitals(PatientVitalsFirestore vitals) async {
-    try {
-      await _firestore
-          .collection(_vitalsCollection)
-          .add(vitals.toFirestore());
-
-      _logger.i('Patient vitals stored in Firestore: ${vitals.patientId}');
-    } catch (e) {
-      _logger.e('Failed to store patient vitals in Firestore: $e');
-      rethrow;
-    }
-  }
-
-  /// Store triage result in Firestore
-  Future<void> storeTriageResult(TriageResultFirestore result) async {
-    try {
-      await _firestore
-          .collection(_triageResultsCollection)
-          .add(result.toFirestore());
-
-      _logger.i('Triage result stored in Firestore: ${result.patientId}');
-    } catch (e) {
-      _logger.e('Failed to store triage result in Firestore: $e');
-      rethrow;
-    }
-  }
-
-  /// Get patient triage results
-  Future<List<TriageResultFirestore>> getPatientTriageResults(
-    String patientId, {
-    int limit = 50,
-  }) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(_triageResultsCollection)
-          .where('patientId', isEqualTo: patientId)
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .get();
-
-      return querySnapshot.docs
-          .map(
-            (doc) => TriageResultFirestore.fromFirestore(
-              doc as DocumentSnapshot<Map<String, dynamic>>,
-            ),
-          )
-          .toList();
-    } catch (e) {
-      _logger.e('Failed to get patient triage results from Firestore: $e');
-      return [];
-    }
   }
 }

@@ -134,6 +134,46 @@ class PatientVitalsFirestore extends Equatable {
     };
   }
 
+  /// Create from JSON
+  factory PatientVitalsFirestore.fromJson(Map<String, dynamic> json) {
+    return PatientVitalsFirestore(
+      id: json['id'] as String,
+      patientId: json['patientId'] as String,
+      deviceId: json['deviceId'] as String?,
+      heartRate: (json['heartRate'] as num?)?.toDouble(),
+      bloodPressureSystolic: (json['bloodPressureSystolic'] as num?)?.toDouble(),
+      bloodPressureDiastolic: (json['bloodPressureDiastolic'] as num?)?.toDouble(),
+      oxygenSaturation: (json['oxygenSaturation'] as num?)?.toDouble(),
+      temperature: (json['temperature'] as num?)?.toDouble(),
+      respiratoryRate: (json['respiratoryRate'] as num?)?.toDouble(),
+      source: VitalsSource.fromString(json['source'] as String),
+      accuracy: (json['accuracy'] as num).toDouble(),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      isValidated: json['isValidated'] as bool,
+    );
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'patientId': patientId,
+      if (deviceId != null) 'deviceId': deviceId,
+      if (heartRate != null) 'heartRate': heartRate,
+      if (bloodPressureSystolic != null) 'bloodPressureSystolic': bloodPressureSystolic,
+      if (bloodPressureDiastolic != null) 'bloodPressureDiastolic': bloodPressureDiastolic,
+      if (oxygenSaturation != null) 'oxygenSaturation': oxygenSaturation,
+      if (temperature != null) 'temperature': temperature,
+      if (respiratoryRate != null) 'respiratoryRate': respiratoryRate,
+      'source': source.toString(),
+      'accuracy': accuracy,
+      'timestamp': timestamp.toIso8601String(),
+      'isValidated': isValidated,
+      'hasAbnormalVitals': hasAbnormalVitals,
+      'vitalsSeverityScore': vitalsSeverityScore,
+    };
+  }
+
   /// Create from domain entity
   factory PatientVitalsFirestore.fromDomain(dynamic domainVitals) {
     return PatientVitalsFirestore(

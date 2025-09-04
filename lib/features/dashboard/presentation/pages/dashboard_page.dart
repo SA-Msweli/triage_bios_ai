@@ -5,6 +5,8 @@ import '../widgets/patient_dashboard_widget.dart';
 import '../widgets/caregiver_dashboard_widget.dart';
 import '../widgets/provider_dashboard_widget.dart';
 import '../widgets/admin_dashboard_widget.dart';
+import '../../../triage/presentation/pages/patient_history_page.dart';
+import '../../../triage/presentation/pages/device_pairing_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -484,75 +486,129 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Placeholder sections - these would be implemented as separate widgets
   Widget _buildTriageSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.medical_services, size: 64),
-          SizedBox(height: 16),
-          Text('Triage Assessment'),
-          SizedBox(height: 8),
-          Text('Start a new triage assessment or view recent results'),
+          const Icon(Icons.medical_services, size: 64),
+          const SizedBox(height: 16),
+          const Text('Triage Assessment'),
+          const SizedBox(height: 8),
+          const Text('Start a new triage assessment or view recent results'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/enhanced-triage'),
+            icon: const Icon(Icons.medical_services),
+            label: const Text('Start Triage Assessment'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildHospitalsSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.local_hospital, size: 64),
-          SizedBox(height: 16),
-          Text('Nearby Hospitals'),
-          SizedBox(height: 8),
-          Text('View hospital locations, capacity, and wait times'),
+          const Icon(Icons.local_hospital, size: 64),
+          const SizedBox(height: 16),
+          const Text('Nearby Hospitals'),
+          const SizedBox(height: 8),
+          const Text('View hospital locations, capacity, and wait times'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/hospitals'),
+            icon: const Icon(Icons.local_hospital),
+            label: const Text('Find Hospitals'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildHistorySection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64),
-          SizedBox(height: 16),
-          Text('Assessment History'),
-          SizedBox(height: 8),
-          Text('View your previous triage assessments and outcomes'),
+          const Icon(Icons.history, size: 64),
+          const SizedBox(height: 16),
+          const Text('Assessment History'),
+          const SizedBox(height: 8),
+          const Text('View your previous triage assessments and outcomes'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to patient history page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PatientHistoryPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history),
+            label: const Text('View History'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildVitalsSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite, size: 64),
-          SizedBox(height: 16),
-          Text('Vitals Monitoring'),
-          SizedBox(height: 8),
-          Text('Track your vital signs and health trends'),
+          const Icon(Icons.favorite, size: 64),
+          const SizedBox(height: 16),
+          const Text('Vitals Monitoring'),
+          const SizedBox(height: 8),
+          const Text('Track your vital signs and health trends'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to device pairing page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DevicePairingPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.favorite),
+            label: const Text('Connect Devices'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPatientsSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people, size: 64),
-          SizedBox(height: 16),
-          Text('Patients Under Care'),
-          SizedBox(height: 8),
-          Text('Monitor patients you are caring for'),
+          const Icon(Icons.people, size: 64),
+          const SizedBox(height: 16),
+          const Text('Patients Under Care'),
+          const SizedBox(height: 8),
+          const Text('Monitor patients you are caring for'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to patient management page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PatientHistoryPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.people),
+            label: const Text('Manage Patients'),
+          ),
         ],
       ),
     );
@@ -574,15 +630,21 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildPatientQueueSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.queue, size: 64),
-          SizedBox(height: 16),
-          Text('Patient Queue'),
-          SizedBox(height: 8),
-          Text('Manage incoming patients and triage priorities'),
+          const Icon(Icons.queue, size: 64),
+          const SizedBox(height: 16),
+          const Text('Patient Queue'),
+          const SizedBox(height: 8),
+          const Text('Manage incoming patients and triage priorities'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/hospital-dashboard'),
+            icon: const Icon(Icons.queue),
+            label: const Text('View Patient Queue'),
+          ),
         ],
       ),
     );
@@ -619,30 +681,42 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildUsersSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people, size: 64),
-          SizedBox(height: 16),
-          Text('User Management'),
-          SizedBox(height: 8),
-          Text('Manage system users and permissions'),
+          const Icon(Icons.people, size: 64),
+          const SizedBox(height: 16),
+          const Text('User Management'),
+          const SizedBox(height: 8),
+          const Text('Manage system users and permissions'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/sessions'),
+            icon: const Icon(Icons.people),
+            label: const Text('Manage Users'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildSystemSection() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.settings, size: 64),
-          SizedBox(height: 16),
-          Text('System Settings'),
-          SizedBox(height: 8),
-          Text('Configure system settings and preferences'),
+          const Icon(Icons.settings, size: 64),
+          const SizedBox(height: 16),
+          const Text('System Settings'),
+          const SizedBox(height: 8),
+          const Text('Configure system settings and preferences'),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/identity-providers'),
+            icon: const Icon(Icons.settings),
+            label: const Text('System Settings'),
+          ),
         ],
       ),
     );

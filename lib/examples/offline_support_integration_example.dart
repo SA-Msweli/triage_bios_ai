@@ -325,12 +325,12 @@ class _OfflineSupportIntegrationExampleState
                   decoration: BoxDecoration(
                     color: _getTraumaLevelColor(
                       hospital.traumaLevel,
-                    ).withOpacity(0.1),
+                    ).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _getTraumaLevelColor(
                         hospital.traumaLevel,
-                      ).withOpacity(0.3),
+                      ).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(

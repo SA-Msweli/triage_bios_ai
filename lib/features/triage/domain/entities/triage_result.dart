@@ -10,6 +10,7 @@ class TriageResult extends Equatable {
   final double confidenceUpper;
   final UrgencyLevel urgencyLevel;
   final String explanation;
+  final String symptoms; // Original symptoms text
   final List<String> keySymptoms;
   final List<String> concerningFindings;
   final List<String> recommendedActions;
@@ -25,6 +26,7 @@ class TriageResult extends Equatable {
     required this.confidenceUpper,
     required this.urgencyLevel,
     required this.explanation,
+    required this.symptoms,
     required this.keySymptoms,
     required this.concerningFindings,
     required this.recommendedActions,
@@ -47,6 +49,7 @@ class TriageResult extends Equatable {
     required double confidenceLower,
     required double confidenceUpper,
     required String explanation,
+    required String symptoms,
     required List<String> keySymptoms,
     required List<String> concerningFindings,
     required List<String> recommendedActions,
@@ -63,6 +66,7 @@ class TriageResult extends Equatable {
       confidenceUpper: confidenceUpper,
       urgencyLevel: _getUrgencyLevel(finalScore),
       explanation: explanation,
+      symptoms: symptoms,
       keySymptoms: keySymptoms,
       concerningFindings: concerningFindings,
       recommendedActions: recommendedActions,
@@ -85,6 +89,7 @@ class TriageResult extends Equatable {
         orElse: () => UrgencyLevel.standard,
       ),
       explanation: map['explanation'] as String,
+      symptoms: map['symptoms'] as String? ?? '',
       keySymptoms: List<String>.from(map['keySymptoms'] ?? []),
       concerningFindings: List<String>.from(map['concerningFindings'] ?? []),
       recommendedActions: List<String>.from(map['recommendedActions'] ?? []),
@@ -108,6 +113,7 @@ class TriageResult extends Equatable {
       'confidenceUpper': confidenceUpper,
       'urgencyLevel': urgencyLevel.toString().split('.').last,
       'explanation': explanation,
+      'symptoms': symptoms,
       'keySymptoms': keySymptoms,
       'concerningFindings': concerningFindings,
       'recommendedActions': recommendedActions,
@@ -176,6 +182,7 @@ class TriageResult extends Equatable {
     confidenceUpper,
     urgencyLevel,
     explanation,
+    symptoms,
     keySymptoms,
     concerningFindings,
     recommendedActions,

@@ -369,12 +369,11 @@ class HospitalAPIIntegrationService {
       emergencyAvailable: data['emergencyAvailable'] as int? ?? 0,
       staffOnDuty: data['staffOnDuty'] as int? ?? 0,
       patientsInQueue: data['patientsInQueue'] as int? ?? 0,
-      averageWaitTime: data['averageWaitTime'] as int? ?? 0,
-      occupancyRate: (data['occupancyRate'] as num?)?.toDouble() ?? 0.0,
+      averageWaitTime: (data['averageWaitTime'] as num?)?.toDouble() ?? 0.0,
       lastUpdated: DateTime.parse(
         data['lastUpdated'] as String? ?? DateTime.now().toIso8601String(),
       ),
-      dataSource: 'custom_api',
+      dataSource: DataSource.customApi,
       isRealTime: data['isRealTime'] as bool? ?? false,
     );
   }

@@ -41,10 +41,10 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(syncStatus.status).withOpacity(0.1),
+        color: _getStatusColor(syncStatus.status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getStatusColor(syncStatus.status).withOpacity(0.3),
+          color: _getStatusColor(syncStatus.status).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -127,10 +127,10 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: _getStatusColor(syncStatus.status).withOpacity(0.1),
+                color: _getStatusColor(syncStatus.status).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _getStatusColor(syncStatus.status).withOpacity(0.3),
+                  color: _getStatusColor(syncStatus.status).withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -231,13 +231,13 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: isOnline
-                ? Colors.green.withOpacity(0.1)
-                : Colors.red.withOpacity(0.1),
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isOnline
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.red.withOpacity(0.3),
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -408,13 +408,13 @@ class FloatingSyncStatus extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
                 border: Border.all(
-                  color: _getStatusColor(syncStatus.status).withOpacity(0.3),
+                  color: _getStatusColor(syncStatus.status).withValues(alpha: 0.3),
                 ),
               ),
               child: Row(

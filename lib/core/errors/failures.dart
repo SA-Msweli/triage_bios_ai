@@ -37,3 +37,7 @@ class LocationFailure extends Failure {
 class PermissionFailure extends Failure {
   const PermissionFailure(super.message, {super.code});
 }
+
+class DatabaseFailure extends Failure {
+  const DatabaseFailure(super.message, {super.code});
+}

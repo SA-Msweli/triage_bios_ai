@@ -91,6 +91,47 @@ class HospitalCapacityFirestore extends Equatable {
     };
   }
 
+  /// Create from JSON
+  factory HospitalCapacityFirestore.fromJson(Map<String, dynamic> json) {
+    return HospitalCapacityFirestore(
+      id: json['id'] as String,
+      hospitalId: json['hospitalId'] as String,
+      totalBeds: json['totalBeds'] as int,
+      availableBeds: json['availableBeds'] as int,
+      icuBeds: json['icuBeds'] as int,
+      icuAvailable: json['icuAvailable'] as int,
+      emergencyBeds: json['emergencyBeds'] as int,
+      emergencyAvailable: json['emergencyAvailable'] as int,
+      staffOnDuty: json['staffOnDuty'] as int,
+      patientsInQueue: json['patientsInQueue'] as int,
+      averageWaitTime: (json['averageWaitTime'] as num).toDouble(),
+      lastUpdated: DateTime.parse(json['lastUpdated'] as String),
+      dataSource: DataSource.fromString(json['dataSource'] as String),
+      isRealTime: json['isRealTime'] as bool,
+    );
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'hospitalId': hospitalId,
+      'totalBeds': totalBeds,
+      'availableBeds': availableBeds,
+      'icuBeds': icuBeds,
+      'icuAvailable': icuAvailable,
+      'emergencyBeds': emergencyBeds,
+      'emergencyAvailable': emergencyAvailable,
+      'staffOnDuty': staffOnDuty,
+      'patientsInQueue': patientsInQueue,
+      'averageWaitTime': averageWaitTime,
+      'lastUpdated': lastUpdated.toIso8601String(),
+      'dataSource': dataSource.toString(),
+      'isRealTime': isRealTime,
+      'occupancyRate': occupancyRate,
+    };
+  }
+
   HospitalCapacityFirestore copyWith({
     String? id,
     String? hospitalId,

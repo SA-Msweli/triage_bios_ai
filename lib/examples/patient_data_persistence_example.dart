@@ -257,8 +257,8 @@ class PatientDataPersistenceExample {
       print('📱 Device Quality History (${qualityHistory.length} records):');
       for (final log in qualityHistory.take(3)) {
         print('   ${log.timestamp.toLocal().toString().split('.')[0]}:');
-        print('     Battery: ${log.batteryLevel.toStringAsFixed(1)}%');
-        print('     Signal: ${(log.signalStrength * 100).toStringAsFixed(1)}%');
+        print('     Battery: ${log.batteryLevel?.toStringAsFixed(1) ?? "N/A"}%');
+        print('     Signal: ${log.signalStrength != null ? (log.signalStrength! * 100).toStringAsFixed(1) : "N/A"}%');
         print(
           '     Quality Score: ${(log.dataQualityScore * 100).toStringAsFixed(1)}%',
         );

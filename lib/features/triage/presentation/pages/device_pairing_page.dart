@@ -358,7 +358,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(iconData, color: color, size: 24),
@@ -369,10 +369,10 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isConnected ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: isConnected ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isConnected ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+          color: isConnected ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3),
         ),
       ),
       child: Text(
@@ -438,7 +438,7 @@ class _DevicePairingPageState extends State<DevicePairingPage> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, color: color, size: 20),

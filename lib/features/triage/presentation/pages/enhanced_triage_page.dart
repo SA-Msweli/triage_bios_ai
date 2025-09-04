@@ -255,8 +255,29 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
             _buildProcessingView(),
           ] else if (_currentStepIndex == 3) ...[
             // Step 4: Results
-            if (_assessmentResult != null)
+            if (_assessmentResult != null) ...[
               TriageResultWidget(result: _assessmentResult!),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _resetAssessment,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('New Assessment'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.pushNamed(context, '/hospitals'),
+                      icon: const Icon(Icons.local_hospital),
+                      label: const Text('Find Hospitals'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
 
           const SizedBox(height: 24),
@@ -620,6 +641,9 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
     if (_currentStepIndex == 2) {
       // Start AI processing
       _performAIAssessment();
+    } else if (_currentStepIndex == 3) {
+      // Navigate to hospital finder
+      Navigator.pushNamed(context, '/hospitals');
     } else if (_currentStepIndex < _steps.length - 1) {
       setState(() {
         _currentStepIndex++;
@@ -752,7 +776,7 @@ class _EnhancedTriagePageState extends State<EnhancedTriagePage>
       case 2:
         return _isAssessing ? 'Processing...' : 'View Results';
       case 3:
-        return 'Find Hospitals';
+        return _assessmentResult != null ? 'Find Hospitals' : 'Complete';
       default:
         return 'Next';
     }

@@ -387,7 +387,10 @@ class OptimizedQueryService {
       }
     }
 
-    return _performanceService.createOptimizedListener(
+    // Create a stream controller to transform the data
+    final controller = StreamController<List<HospitalCapacityFirestore>>();
+    
+    _performanceService.createOptimizedListener(
       listenerId: listenerId,
       collectionPath: _hospitalCapacityCollection,
       filters: filters,
@@ -418,9 +421,16 @@ class OptimizedQueryService {
         }
 
         onUpdate(filteredCapacities);
+        controller.add(filteredCapacities);
       },
-      onError: onError,
+      onError: (error) {
+        onError(error);
+        controller.addError(error);
+      },
     );
+
+    // Return the controller's stream subscription
+    return controller.stream.listen(null);
   }
 
   /// Create optimized patient vitals listener
@@ -431,7 +441,10 @@ class OptimizedQueryService {
     required void Function(List<PatientVitalsFirestore>) onUpdate,
     required void Function(Object) onError,
   }) {
-    return _performanceService.createOptimizedListener(
+    // Create a stream controller to transform the data
+    final controller = StreamController<List<PatientVitalsFirestore>>();
+    
+    _performanceService.createOptimizedListener(
       listenerId: listenerId,
       collectionPath: _vitalsCollection,
       filters: [QueryFilter.isEqualTo('patientId', patientId)],
@@ -442,9 +455,16 @@ class OptimizedQueryService {
             .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
             .toList();
         onUpdate(vitals);
+        controller.add(vitals);
       },
-      onError: onError,
+      onError: (error) {
+        onError(error);
+        controller.addError(error);
+      },
     );
+
+    // Return the controller's stream subscription
+    return controller.stream.listen(null);
   }
 
   /// Create optimized critical vitals listener
@@ -455,7 +475,10 @@ class OptimizedQueryService {
     required void Function(List<PatientVitalsFirestore>) onUpdate,
     required void Function(Object) onError,
   }) {
-    return _performanceService.createOptimizedListener(
+    // Create a stream controller to transform the data
+    final controller = StreamController<List<PatientVitalsFirestore>>();
+    
+    _performanceService.createOptimizedListener(
       listenerId: listenerId,
       collectionPath: _vitalsCollection,
       filters: [
@@ -475,9 +498,16 @@ class OptimizedQueryService {
             .map((doc) => PatientVitalsFirestore.fromFirestore(doc))
             .toList();
         onUpdate(vitals);
+        controller.add(vitals);
       },
-      onError: onError,
+      onError: (error) {
+        onError(error);
+        controller.addError(error);
+      },
     );
+
+    // Return the controller's stream subscription
+    return controller.stream.listen(null);
   }
 
   // ============================================================================
@@ -568,5 +598,4 @@ class OptimizedQueryService {
   }
 }
 
-/// Urgency levels for hospital queries
-enum UrgencyLevel { nonUrgent, standard, urgent, critical }
+// UrgencyLevel enum is imported from triage_result_firestore.dart

@@ -71,7 +71,7 @@ class FirebaseService {
 
   // --- Color Conversion Helper Methods ---
   String _colorToHexString(Color color) {
-    return '#${color.value.toRadixString(16).padLeft(8, '0')}'; // ARGB format, e.g., #FFAABBCC
+    return '#${color.toARGB32().toRadixString(16).padLeft(8, '0')}'; // ARGB format, e.g., #FFAABBCC
   }
 
   Color _hexStringToColor(String hexString) {

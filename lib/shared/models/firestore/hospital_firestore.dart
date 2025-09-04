@@ -73,6 +73,42 @@ class HospitalFirestore extends Equatable {
     };
   }
 
+  /// Create from JSON
+  factory HospitalFirestore.fromJson(Map<String, dynamic> json) {
+    return HospitalFirestore(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      address: HospitalAddress.fromMap(json['address'] as Map<String, dynamic>),
+      location: HospitalLocation.fromMap(json['location'] as Map<String, dynamic>),
+      contact: HospitalContact.fromMap(json['contact'] as Map<String, dynamic>),
+      traumaLevel: json['traumaLevel'] as int,
+      specializations: List<String>.from(json['specializations'] as List),
+      certifications: List<String>.from(json['certifications'] as List),
+      operatingHours: HospitalOperatingHours.fromMap(json['operatingHours'] as Map<String, dynamic>),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isActive: json['isActive'] as bool,
+    );
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'address': address.toMap(),
+      'location': location.toMap(),
+      'contact': contact.toMap(),
+      'traumaLevel': traumaLevel,
+      'specializations': specializations,
+      'certifications': certifications,
+      'operatingHours': operatingHours.toMap(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'isActive': isActive,
+    };
+  }
+
   HospitalFirestore copyWith({
     String? id,
     String? name,

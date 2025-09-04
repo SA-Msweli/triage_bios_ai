@@ -34,8 +34,9 @@ void main() async {
     // Validate configuration
     final missingVars = AppConfig.instance.validateRequiredVariables();
     if (missingVars.isNotEmpty && kDebugMode) {
-      print('⚠️ Missing environment variables: ${missingVars.join(', ')}');
-      print('💡 Using fallback values for development');
+      // Use debugPrint for development-only logging
+      debugPrint('⚠️ Missing environment variables: ${missingVars.join(', ')}');
+      debugPrint('💡 Using fallback values for development');
     }
 
     // Check if Firebase should be used

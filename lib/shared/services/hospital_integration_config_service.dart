@@ -372,7 +372,8 @@ class HospitalIntegrationConfigService {
         return false;
       }
 
-      if (!Uri.tryParse(apiConfig.baseUrl)?.hasAbsolutePath ?? true) {
+      final uri = Uri.tryParse(apiConfig.baseUrl);
+      if (uri == null || !uri.hasAbsolutePath) {
         _logger.w('Invalid API base URL: ${apiConfig.baseUrl}');
         return false;
       }

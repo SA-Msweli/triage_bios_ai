@@ -171,6 +171,7 @@ class GeminiService {
         confidenceLower: aiResponse['confidence_lower'] as double,
         confidenceUpper: aiResponse['confidence_upper'] as double,
         explanation: aiResponse['explanation'] as String,
+        symptoms: symptoms,
         keySymptoms: List<String>.from(aiResponse['key_symptoms'] ?? []),
         concerningFindings: List<String>.from(
           aiResponse['concerning_findings'] ?? [],
